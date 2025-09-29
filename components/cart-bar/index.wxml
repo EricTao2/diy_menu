@@ -1,0 +1,9 @@
+<view wx:if="{{visible}}" class="cart-bar" bindtap="onTap">
+  <view class="cart-summary">
+    <text class="cart-count">{{itemCount}}{{itemLabel}}</text>
+    <text class="cart-total">{{currency}}{{totalText}}</text>
+  </view>
+  <view class="cart-action">
+    <text>{{label}}</text>
+  </view>
+</view>

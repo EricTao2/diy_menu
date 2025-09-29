@@ -1,0 +1,40 @@
+<view class="page {{themeClass}}">
+  <view class="container" wx:if="{{order}}">
+    <view class="section-title">订单详情</view>
+    <view class="order-meta">
+      <text>订单号：{{order.orderNo}}</text>
+      <text>创建时间：{{order.createdAtText}}</text>
+      <order-status-tag status="{{order.status}}" text="{{order.statusText}}"></order-status-tag>
+    </view>
+    <view class="items">
+      <block wx:for="{{order.items}}" wx:key="dishId" wx:for-item="item">
+        <view class="item-row">
+          <text class="item-name">{{item.name}} × {{item.quantity}}</text>
+          <text class="item-total">{{item.totalText}}</text>
+        </view>
+        <view class="item-options" wx:if="{{item.options.length}}">
+          <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+        </view>
+      </block>
+    </view>
+    <view class="remarks" wx:if="{{order.remark}}">备注：{{order.remark}}</view>
+    <view class="table" wx:if="{{order.tableNo}}">桌号：{{order.tableNo}}</view>
+    <view class="handle-remark">
+      <text class="handle-remark__label">处理备注</text>
+      <textarea
+        class="handle-remark__input"
+        value="{{handledRemark}}"
+        placeholder="记录制作进度或特殊说明"
+        auto-height
+        maxlength="200"
+        bindinput="onRemarkInput"
+      ></textarea>
+      <button class="secondary" bindtap="onSaveRemark">保存备注</button>
+    </view>
+    <view class="actions">
+      <button class="primary" wx:if="{{order.status === 'new'}}" bindtap="onMarkProcessing">开始处理</button>
+      <button class="primary" wx:if="{{order.status === 'processing'}}" bindtap="onMarkComplete">完成订单</button>
+      <button class="danger" wx:if="{{order.status === 'processing'}}" bindtap="onMarkCancel">取消订单</button>
+    </view>
+  </view>
+</view>

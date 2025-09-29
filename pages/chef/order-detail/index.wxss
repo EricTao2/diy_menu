@@ -1,0 +1,61 @@
+@import '/style/form.wxss';
+
+.order-meta {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.items .item-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.item-options {
+  color: var(--subtext-color);
+  margin-bottom: 8rpx;
+}
+
+.actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+
+button.danger {
+  background-color: var(--danger-color);
+  color: #ffffff;
+}
+
+.handle-remark {
+  margin-top: 24rpx;
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.handle-remark__label {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.handle-remark__input {
+  min-height: 140rpx;
+  padding: 16rpx;
+  border-radius: 12rpx;
+  background-color: rgba(15, 23, 42, 0.05);
+}
+
+button.secondary {
+  background-color: rgba(15, 23, 42, 0.08);
+  color: var(--text-color);
+}

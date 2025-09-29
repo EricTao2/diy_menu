@@ -1,0 +1,70 @@
+<view class="page {{themeClass}}">
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner with-tabbar {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">自定义选项库</text>
+        <view class="top-actions">
+          <button class="icon-btn" size="mini" bindtap="startCreate">新建选项</button>
+        </view>
+      </view>
+      <view class="card">
+        <view class="form-field">
+          <label>选项名称</label>
+          <input value="{{form.name}}" data-field="name" bindinput="onFormInput" />
+        </view>
+        <view class="form-field switch-row">
+          <label>是否必选</label>
+          <switch checked="{{form.required}}" bindchange="onToggleRequired"></switch>
+        </view>
+        <view class="form-field">
+          <label>添加可选项</label>
+          <view class="add-choice-row">
+            <input placeholder="选项名称" value="{{choiceInput}}" bindinput="onChoiceInput" />
+            <button class="pill-btn" size="mini" bindtap="addChoice">添加</button>
+          </view>
+        </view>
+        <radio-group class="choices-list" bindchange="onDefaultChoiceChange">
+          <block wx:for="{{form.choices}}" wx:key="value" wx:for-item="choice">
+            <view class="choice-item">
+              <text class="choice-label">{{choice.label}}</text>
+              <view class="choice-actions">
+                <radio value="{{choice.value}}" checked="{{form.defaultChoice === choice.value}}"></radio>
+                <button class="pill-btn" size="mini" data-value="{{choice.value}}" bindtap="removeChoice">移除</button>
+              </view>
+            </view>
+          </block>
+        </radio-group>
+        <view class="form-actions">
+          <button class="primary" bindtap="onSave">保存选项</button>
+          <button bindtap="startCreate">重置</button>
+        </view>
+      </view>
+      <view class="card options-card">
+        <view class="card-title-row">
+          <text class="card-title">现有选项</text>
+        </view>
+        <view class="options-list" wx:if="{{options.length}}">
+          <block wx:for="{{options}}" wx:key="id" wx:for-item="option">
+            <view class="option-card">
+              <view class="option-header">
+                <text class="option-name">{{option.name}}</text>
+                <text class="option-required" wx:if="{{option.required}}">必选</text>
+              </view>
+              <view class="option-body">
+                <block wx:for="{{option.choices}}" wx:key="value" wx:for-item="choice">
+                  <text class="choice-tag">{{choice.label}}</text>
+                </block>
+              </view>
+              <view class="option-footer">
+                <button class="pill-btn" size="mini" data-id="{{option.id}}" bindtap="startEdit">编辑</button>
+                <button class="pill-btn" size="mini" data-id="{{option.id}}" bindtap="onDelete">删除</button>
+              </view>
+            </view>
+          </block>
+        </view>
+        <view class="empty" wx:else>暂未配置选项</view>
+      </view>
+    </view>
+  </scroll-view>
+  <admin-tabbar active-key="optionLibrary" bind:change="onTabChange"></admin-tabbar>
+</view>

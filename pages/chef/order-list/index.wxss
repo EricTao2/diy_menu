@@ -1,0 +1,19 @@
+@import '/style/form.wxss';
+
+.tab-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.tab {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background-color: rgba(15, 23, 42, 0.08);
+  color: var(--text-color);
+}
+
+.tab.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}

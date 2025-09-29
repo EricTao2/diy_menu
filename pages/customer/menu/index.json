@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "option-selector": "/components/option-selector/index",
+    "cart-bar": "/components/cart-bar/index",
+    "role-switcher": "/components/role-switcher/index"
+  }
+}

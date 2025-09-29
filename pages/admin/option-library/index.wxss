@@ -1,0 +1,125 @@
+@import '/style/admin-page.wxss';
+@import '/style/form.wxss';
+
+.card {
+  background: var(--card-bg);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.add-choice-row {
+  display: flex;
+  gap: 12rpx;
+}
+
+.add-choice-row input {
+  flex: 1;
+}
+
+.add-choice-row button {
+  flex-shrink: 0;
+}
+
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.choice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: rgba(15, 23, 42, 0.04);
+  padding: 16rpx;
+  border-radius: 12rpx;
+}
+
+.choice-label {
+  font-size: 26rpx;
+  color: var(--text-color);
+}
+
+.choice-actions {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.options-card {
+  gap: 20rpx;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.option-card {
+  background-color: rgba(15, 23, 42, 0.04);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.option-header {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 12rpx;
+}
+
+.option-name {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.option-required {
+  color: var(--danger-color);
+}
+
+.option-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.choice-tag {
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  background-color: rgba(31, 111, 235, 0.12);
+  color: var(--primary-color);
+}
+
+.option-footer {
+  display: flex;
+  gap: 12rpx;
+  justify-content: flex-end;
+}
+
+.empty {
+  text-align: center;
+  color: var(--subtext-color);
+  padding: 24rpx 0;
+}

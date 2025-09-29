@@ -1,0 +1,28 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">分类管理</view>
+    <view class="add-row">
+      <input
+        placeholder="新分类名称"
+        value="{{newCategoryName}}"
+        bindinput="onInput"
+      />
+      <button class="primary" bindtap="onAddCategory">添加分类</button>
+    </view>
+    <view class="sort-hint">长按拖拽可调整排序</view>
+    <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
+      <view class="category-card">
+        <view class="category-info">
+          <text>{{category.name}}</text>
+          <text class="default-tag" wx:if="{{category.id === menu.defaultCategoryId}}">默认分类</text>
+        </view>
+        <view class="category-actions">
+          <button size="mini" data-id="{{category.id}}" data-direction="up" bindtap="onMove">↑</button>
+          <button size="mini" data-id="{{category.id}}" data-direction="down" bindtap="onMove">↓</button>
+          <button size="mini" data-id="{{category.id}}" bindtap="onEditCategory">编辑</button>
+          <button size="mini" data-id="{{category.id}}" bindtap="onDeleteCategory">删除</button>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

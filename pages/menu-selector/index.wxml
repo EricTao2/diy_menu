@@ -1,0 +1,36 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">选择菜单</view>
+    <view class="subtitle">请选择需要操作的菜单和身份</view>
+    <view class="actions">
+      <button class="secondary create-button" bindtap="onCreateMenu">新建菜单</button>
+    </view>
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:if="{{menus.length}}">
+      <block wx:for="{{menus}}" wx:key="id" wx:for-item="menu">
+        <view
+          class="menu-card {{menu.id === selectedMenuId ? 'active' : ''}}"
+          data-menu-id="{{menu.id}}"
+          bindtap="onSelectMenu"
+        >
+          <view class="menu-header">
+            <text class="menu-name">{{menu.name}}</text>
+            <text class="menu-desc">{{menu.description}}</text>
+          </view>
+          <view class="menu-roles">
+            <text class="menu-roles-label">已授权角色</text>
+            <role-switcher
+              data-menu-id="{{menu.id}}"
+              roles="{{menu.roles}}"
+              active-role="{{menu.id === selectedMenuId ? selectedRole : ''}}"
+              role-labels="{{roleLabels}}"
+              bind:switch="onSwitchRole"
+            ></role-switcher>
+          </view>
+        </view>
+      </block>
+      <button class="primary enter" bindtap="onEnter">进入</button>
+    </view>
+    <view wx:else class="empty">你还没有任何菜单，点击上方“新建菜单”即可创建</view>
+  </view>
+</view>

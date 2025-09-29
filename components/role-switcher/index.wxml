@@ -1,0 +1,11 @@
+<view class="role-switcher">
+  <block wx:for="{{roles}}" wx:key="role">
+    <view
+      class="role-chip {{item === activeRole ? 'active' : ''}}"
+      data-role="{{item}}"
+      bindtap="onSwitch"
+    >
+      <text>{{roleLabels[item] || item}}</text>
+    </view>
+  </block>
+</view>

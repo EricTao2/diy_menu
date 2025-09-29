@@ -1,0 +1,31 @@
+@import '/style/form.wxss';
+
+.order-item {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.06);
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.item-options {
+  margin-top: 12rpx;
+  color: var(--subtext-color);
+}
+
+.radio-item {
+  margin-right: 24rpx;
+}
+
+.total {
+  font-size: 36rpx;
+  font-weight: 700;
+  margin: 24rpx 0;
+}

@@ -1,0 +1,35 @@
+.cart-bar {
+  position: fixed;
+  left: 24rpx;
+  right: 24rpx;
+  bottom: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border-radius: 999rpx;
+  padding: 20rpx 32rpx;
+  box-shadow: 0 12rpx 24rpx rgba(31, 111, 235, 0.35);
+  z-index: 99;
+}
+
+.cart-summary {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.cart-count {
+  font-size: 28rpx;
+}
+
+.cart-total {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.cart-action {
+  font-size: 28rpx;
+  font-weight: 600;
+}

@@ -1,0 +1,24 @@
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.theme-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.theme-chip {
+  padding: 12rpx 24rpx;
+  border-radius: 999rpx;
+  background-color: rgba(31, 111, 235, 0.12);
+  color: var(--primary-color);
+  font-size: 26rpx;
+}
+
+.theme-chip.active {
+  background-color: var(--primary-color);
+  color: #ffffff;
+}

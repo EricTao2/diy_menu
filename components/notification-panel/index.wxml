@@ -1,0 +1,14 @@
+<view class="notification-panel">
+  <block wx:if="{{notifications.length}}">
+    <block wx:for="{{notifications}}" wx:key="id">
+      <view class="notification-item" data-notification-id="{{item.id}}" bindtap="onTap">
+        <text class="notification-title">{{item.title}}</text>
+        <text class="notification-message">{{item.message}}</text>
+        <text class="notification-time">{{item.createdAtText}}</text>
+      </view>
+    </block>
+  </block>
+  <view class="notification-empty" wx:else>
+    <text>{{emptyText}}</text>
+  </view>
+</view>

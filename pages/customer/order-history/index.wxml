@@ -1,0 +1,17 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">历史订单</view>
+    <block wx:for="{{orders}}" wx:key="id" wx:for-item="order">
+      <order-item
+        order="{{order}}"
+        status-text="{{order.statusText}}"
+        show-actions="{{true}}"
+        action-text="再次下单"
+        secondary-action-text=""
+        view-text="查看详情"
+        bind:primary="onReorder"
+        bind:view="onView"
+      ></order-item>
+    </block>
+  </view>
+</view>

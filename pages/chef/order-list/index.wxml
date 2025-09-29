@@ -1,0 +1,29 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">订单中心</view>
+    <view class="tab-row">
+      <block wx:for="{{statusTabs}}" wx:key="key" wx:for-item="tab">
+        <view
+          class="tab {{tab.key === activeStatus ? 'active' : ''}}"
+          data-status="{{tab.key}}"
+          bindtap="onTabChange"
+        >
+          {{tab.label}}
+        </view>
+      </block>
+    </view>
+    <block wx:for="{{orders}}" wx:key="id" wx:for-item="order">
+      <order-item
+        order="{{order}}"
+        status-text="{{order.statusText}}"
+        show-actions="{{order.showActions}}"
+        action-text="{{order.actionText}}"
+        secondary-action-text="{{order.secondaryActionText}}"
+        view-text="查看详情"
+        bind:primary="onPrimaryAction"
+        bind:secondary="onSecondaryAction"
+        bind:view="onView"
+      ></order-item>
+    </block>
+  </view>
+</view>

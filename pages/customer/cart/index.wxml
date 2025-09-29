@@ -1,0 +1,31 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">购物车</view>
+    <view wx:if="{{!itemsView.length}}" class="empty">购物车为空，去菜单看看</view>
+    <block wx:else>
+      <block wx:for="{{itemsView}}" wx:key="index" wx:for-item="item">
+        <view class="cart-item">
+          <view class="item-header">
+            <text class="item-name">{{item.name}}</text>
+            <text class="item-price">{{item.priceText}}</text>
+          </view>
+          <view class="item-options" wx:if="{{item.options.length}}">
+            <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+          </view>
+          <view class="item-actions">
+            <input type="number" value="{{item.quantity}}" data-index="{{item.index}}" bindinput="onQuantityChange" />
+            <text class="item-total">{{item.totalText}}</text>
+            <button size="mini" data-index="{{item.index}}" bindtap="onRemoveItem">删除</button>
+          </view>
+        </view>
+      </block>
+      <view class="cart-footer">
+        <text>{{totalText}}</text>
+        <view class="footer-actions">
+          <button bindtap="onClearCart">清空</button>
+          <button class="primary" bindtap="onSubmit">提交订单</button>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

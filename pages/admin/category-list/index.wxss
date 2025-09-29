@@ -1,0 +1,46 @@
+@import '/style/form.wxss';
+
+.add-row {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 16rpx;
+}
+
+.add-row input {
+  flex: 1;
+}
+
+.sort-hint {
+  color: var(--subtext-color);
+  margin-bottom: 16rpx;
+}
+
+.category-card {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.category-info {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 28rpx;
+}
+
+.default-tag {
+  background-color: rgba(31, 111, 235, 0.12);
+  color: var(--primary-color);
+  padding: 6rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+}
+
+.category-actions {
+  display: flex;
+  gap: 12rpx;
+}

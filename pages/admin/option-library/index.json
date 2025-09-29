@@ -1,0 +1,5 @@
+{
+  "usingComponents": {
+    "admin-tabbar": "/custom-tab-bar/index"
+  }
+}

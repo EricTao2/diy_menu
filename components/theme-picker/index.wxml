@@ -1,0 +1,14 @@
+<view class="theme-picker">
+  <view class="theme-label" wx:if="{{label}}">{{label}}</view>
+  <view class="theme-list">
+    <block wx:for="{{themes}}" wx:key="id">
+      <view
+        class="theme-chip {{item.id === value ? 'active' : ''}}"
+        data-theme-id="{{item.id}}"
+        bindtap="onSelect"
+      >
+        {{item.name}}
+      </view>
+    </block>
+  </view>
+</view>

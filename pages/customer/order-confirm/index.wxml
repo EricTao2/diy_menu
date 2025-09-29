@@ -1,0 +1,33 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="section-title">确认订单</view>
+    <block wx:for="{{itemsView}}" wx:key="dishId" wx:for-item="item">
+      <view class="order-item">
+        <view class="item-header">
+          <text class="item-name">{{item.name}} × {{item.quantity}}</text>
+          <text class="item-price">{{item.totalText}}</text>
+        </view>
+        <view class="item-options" wx:if="{{item.options.length}}">
+          <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+        </view>
+      </view>
+    </block>
+    <view class="form-field">
+      <label>备注</label>
+      <textarea value="{{form.remark}}" data-field="remark" bindinput="onInput"></textarea>
+    </view>
+    <view class="form-field">
+      <label>桌号</label>
+      <input value="{{form.tableNo}}" data-field="tableNo" bindinput="onInput" />
+    </view>
+    <view class="form-field">
+      <label>取餐方式</label>
+      <radio-group value="{{form.pickupType}}" bindchange="onPickupChange">
+        <label class="radio-item"><radio value="dine-in" checked="{{form.pickupType === 'dine-in'}}" />堂食</label>
+        <label class="radio-item"><radio value="takeaway" checked="{{form.pickupType === 'takeaway'}}" />外带</label>
+      </radio-group>
+    </view>
+    <view class="total">{{totalText}}</view>
+    <button class="primary" loading="{{submitting}}" bindtap="onSubmit">提交</button>
+  </view>
+</view>

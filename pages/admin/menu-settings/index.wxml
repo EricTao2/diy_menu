@@ -1,0 +1,101 @@
+<view class="page {{themeClass}}">
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner with-tabbar {{transitionClass}}" wx:if="{{form}}">
+      <view class="top-bar">
+        <text class="page-title">菜单设置</text>
+      </view>
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">基础信息</text>
+          <text class="section-desc">展示给顾客的菜单名称与简介</text>
+        </view>
+        <view class="form-field">
+          <label>菜单名称</label>
+          <input
+            value="{{form.name}}"
+            data-field="name"
+            bindinput="onInput"
+            placeholder="请输入菜单名称"
+          />
+        </view>
+        <view class="form-field">
+          <label>菜单描述</label>
+          <textarea
+            value="{{form.description}}"
+            data-field="description"
+            bindinput="onInput"
+            placeholder="用于介绍菜单定位、特色等"
+          ></textarea>
+        </view>
+      </view>
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">主题设置</text>
+          <text class="section-desc">切换管理端与顾客端的配色方案</text>
+        </view>
+        <theme-picker
+          themes="{{themeOptions}}"
+          value="{{form.theme}}"
+          label="主题选择"
+          bind:change="onThemeChange"
+        ></theme-picker>
+      </view>
+      <view class="card section-card category-card">
+        <view class="category-header">
+          <view class="section-header">
+            <text class="section-title">菜品分类</text>
+            <text class="section-desc">管理菜单左侧分类顺序与名称</text>
+          </view>
+          <button class="icon-btn" size="mini" bindtap="onAddCategory">新增分类</button>
+        </view>
+        <view class="category-list" wx:if="{{categories.length}}">
+          <block wx:for="{{categories}}" wx:key="id" wx:for-item="category" wx:for-index="index">
+            <view class="category-row">
+              <view class="category-info">
+                <text class="category-name">{{category.name}}</text>
+              </view>
+              <view class="category-actions">
+                <button class="pill-btn ghost" size="mini" data-id="{{category.id}}" bindtap="onRenameCategory">编辑</button>
+                <button
+                  class="pill-btn ghost"
+                  size="mini"
+                  data-id="{{category.id}}"
+                  bindtap="onDeleteCategory"
+                  disabled="{{category.id === menu.defaultCategoryId}}"
+                >
+                  删除
+                </button>
+                <button
+                  class="pill-btn ghost"
+                  size="mini"
+                  data-id="{{category.id}}"
+                  data-direction="up"
+                  bindtap="onMoveCategory"
+                  disabled="{{index === 0}}"
+                >
+                  上移
+                </button>
+                <button
+                  class="pill-btn ghost"
+                  size="mini"
+                  data-id="{{category.id}}"
+                  data-direction="down"
+                  bindtap="onMoveCategory"
+                  disabled="{{index === categories.length - 1}}"
+                >
+                  下移
+                </button>
+              </view>
+            </view>
+          </block>
+        </view>
+        <view class="empty" wx:else>暂无分类</view>
+      </view>
+      <view class="form-actions bottom-actions">
+        <button class="danger" bindtap="onDeleteMenu">删除菜单</button>
+        <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存配置</button>
+      </view>
+    </view>
+  </scroll-view>
+  <admin-tabbar active-key="menuSettings" bind:change="onTabChange"></admin-tabbar>
+</view>

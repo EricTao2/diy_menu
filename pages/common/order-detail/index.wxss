@@ -1,0 +1,23 @@
+@import '/style/form.wxss';
+
+.order-meta {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.items .item-row {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.item-options {
+  color: var(--subtext-color);
+  margin-bottom: 8rpx;
+}

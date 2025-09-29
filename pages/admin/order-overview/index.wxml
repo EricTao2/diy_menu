@@ -1,0 +1,60 @@
+<view class="page {{themeClass}}">
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner with-tabbar {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">订单概览</text>
+      </view>
+      <view class="loading" wx:if="{{loading}}">加载中</view>
+      <block wx:elif="{{overview}}">
+        <view class="summary-row">
+          <view class="summary-card">
+            <text class="summary-label">订单总数</text>
+            <text class="summary-value">{{overview.totalOrders}}</text>
+          </view>
+          <view class="summary-card">
+            <text class="summary-label">累计金额</text>
+            <text class="summary-value">{{overview.totalRevenueText}}</text>
+          </view>
+        </view>
+
+        <view class="card">
+          <view class="card-title">状态分布</view>
+          <block wx:for="{{statusDistribution}}" wx:key="status">
+            <view class="status-row">
+              <order-status-tag status="{{item.status}}" text="{{item.label}}"></order-status-tag>
+              <view class="status-metrics">
+                <text class="status-count">{{item.count}}</text>
+                <text class="status-percent">{{item.percent}}%</text>
+              </view>
+            </view>
+            <view class="status-bar">
+              <view class="status-bar__fill" style="width: {{item.percent}}%;"></view>
+            </view>
+          </block>
+          <view class="empty" wx:if="{{!overview.totalOrders}}">暂无订单数据</view>
+        </view>
+
+        <view class="card">
+          <view class="card-title">最新订单</view>
+          <view wx:if="{{recentOrders.length}}">
+            <block wx:for="{{recentOrders}}" wx:key="id" wx:for-item="record">
+              <view class="order-row">
+                <view class="order-info">
+                  <text class="order-no">{{record.orderNo}}</text>
+                  <text class="order-time">{{record.createdAtText}}</text>
+                </view>
+                <view class="order-extra">
+                  <order-status-tag status="{{record.status}}" text="{{record.statusText}}"></order-status-tag>
+                  <text class="order-price">{{record.totalPriceText}}</text>
+                </view>
+              </view>
+            </block>
+          </view>
+          <view class="empty" wx:else>暂无订单数据</view>
+        </view>
+      </block>
+      <view class="empty" wx:else>暂无订单数据</view>
+    </view>
+  </scroll-view>
+  <admin-tabbar active-key="orderOverview" bind:change="onTabChange"></admin-tabbar>
+</view>

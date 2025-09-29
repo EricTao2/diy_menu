@@ -1,0 +1,48 @@
+.option-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.option-block {
+  background-color: var(--card-bg);
+  padding: 16rpx;
+  border-radius: 12rpx;
+  box-shadow: 0 4rpx 12rpx rgba(15, 23, 42, 0.04);
+}
+
+.option-header {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.option-name {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.option-required {
+  color: var(--danger-color);
+}
+
+.option-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.choice-chip {
+  padding: 12rpx 24rpx;
+  border: 1rpx solid rgba(31, 41, 55, 0.1);
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: var(--text-color);
+}
+
+.choice-chip.selected {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #ffffff;
+}

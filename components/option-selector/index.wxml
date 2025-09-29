@@ -1,0 +1,22 @@
+<view class="option-selector">
+  <block wx:for="{{options}}" wx:key="id">
+    <view class="option-block">
+      <view class="option-header">
+        <text class="option-name">{{item.name}}</text>
+        <text class="option-required" wx:if="{{item.required}}">*</text>
+      </view>
+      <view class="option-choices">
+        <block wx:for="{{item.choices}}" wx:key="value" wx:for-item="choice">
+          <view
+            class="choice-chip {{selection[item.id] === choice.value ? 'selected' : ''}}"
+            data-option-id="{{item.id}}"
+            data-value="{{choice.value}}"
+            bindtap="selectChoice"
+          >
+            {{choice.label}}
+          </view>
+        </block>
+      </view>
+    </view>
+  </block>
+</view>

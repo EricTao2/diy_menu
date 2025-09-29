@@ -1,0 +1,119 @@
+page {
+  background-color: #f5f5f5;
+  color: #1f2933;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.page {
+  --page-bg: #f5f5f5;
+  --card-bg: #ffffff;
+  --primary-color: #1f6feb;
+  --danger-color: #d93025;
+  --success-color: #198754;
+  --text-color: #1f2933;
+  --subtext-color: #596273;
+  background-color: var(--page-bg);
+  color: var(--text-color);
+  min-height: 100vh;
+}
+
+.page.theme-dark {
+  --page-bg: #121212;
+  --card-bg: #1e1e1e;
+  --primary-color: #64b5f6;
+  --danger-color: #f87171;
+  --success-color: #34d399;
+  --text-color: #f5f5f5;
+  --subtext-color: #d1d5db;
+  background-color: var(--page-bg);
+  color: var(--text-color);
+}
+
+.page.theme-light {
+  --page-bg: #f5f5f5;
+  --card-bg: #ffffff;
+  --primary-color: #1f6feb;
+  --danger-color: #d93025;
+  --success-color: #198754;
+  --text-color: #1f2933;
+  --subtext-color: #596273;
+}
+
+.page.theme-forest {
+  --page-bg: #f0f7f4;
+  --card-bg: #ffffff;
+  --primary-color: #356859;
+  --danger-color: #bc4749;
+  --success-color: #6a994e;
+  --text-color: #2f4858;
+  --subtext-color: #5c7360;
+}
+
+.container {
+  padding: 24rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  margin-bottom: 16rpx;
+}
+
+.card {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.06);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+.row.space-between {
+  justify-content: space-between;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  background-color: rgba(31, 111, 235, 0.1);
+  color: var(--primary-color);
+}
+
+button.primary {
+  border: none;
+  background-color: var(--primary-color);
+  color: #ffffff;
+  border-radius: 999rpx;
+  padding: 0 32rpx;
+}
+
+button.danger {
+  background-color: var(--danger-color);
+  border: none;
+  color: #ffffff;
+  border-radius: 999rpx;
+}
+
+button.secondary {
+  background-color: rgba(31, 111, 235, 0.1);
+  color: var(--primary-color);
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--subtext-color);
+  padding: 120rpx 0;
+}
+
+.empty-state image {
+  width: 160rpx;
+  height: 160rpx;
+  margin-bottom: 24rpx;
+}

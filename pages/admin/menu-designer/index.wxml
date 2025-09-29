@@ -1,0 +1,103 @@
+<view class="page {{themeClass}}">
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner with-tabbar {{transitionClass}}">
+      <view class="loading" wx:if="{{loading}}">加载中</view>
+      <block wx:else>
+        <view class="top-bar">
+          <text class="page-title">菜单管理</text>
+          <view class="top-actions">
+            <button class="icon-btn" size="mini" bindtap="onAddCategory">新增分类</button>
+            <button class="icon-btn primary" size="mini" bindtap="onAddDish">新增菜品</button>
+          </view>
+        </view>
+        <view class="status-tabs">
+          <block wx:for="{{statusFilters}}" wx:key="key" wx:for-item="item">
+            <view
+              class="status-tab {{item.key === activeStatusFilter ? 'active' : ''}}"
+              data-key="{{item.key}}"
+              bindtap="onSelectStatusFilter"
+            >
+              <text class="status-label">{{item.label}}</text>
+              <text class="status-count">{{statusCounts[item.key] || 0}}</text>
+            </view>
+          </block>
+        </view>
+        <view class="designer-layout">
+          <view class="category-column">
+            <view class="category-header">
+              <text class="category-title">菜品分类</text>
+            </view>
+            <scroll-view scroll-y class="category-scroll">
+              <block wx:for="{{categories}}" wx:key="id" wx:for-item="category" wx:for-index="index">
+                <view
+                  class="category-item {{category.id === activeCategoryId ? 'active' : ''}} {{category.id === draggingId ? 'dragging' : ''}}"
+                  data-id="{{category.id}}"
+                  data-index="{{index}}"
+                  bindtap="onSelectCategory"
+                  catchtouchstart="onCategoryTouchStart"
+                  catchtouchmove="onCategoryTouchMove"
+                  catchtouchend="onCategoryTouchEnd"
+                  catchtouchcancel="onCategoryTouchEnd"
+                >
+                  <view class="category-item-main">
+                    <text class="category-name">{{category.name}}</text>
+                  </view>
+                </view>
+              </block>
+            </scroll-view>
+          </view>
+          <view class="dish-column">
+            <scroll-view scroll-y class="dish-scroll">
+              <view wx:if="{{activeDishes.length}}" class="dish-list">
+                <block wx:for="{{activeDishes}}" wx:key="id" wx:for-item="dish" wx:for-index="dIndex">
+                  <view
+                    class="dish-card {{dish.id === draggingDishId ? 'dragging' : ''}}"
+                    data-id="{{dish.id}}"
+                    data-index="{{dIndex}}"
+                  >
+                    <view
+                      class="dish-main"
+                      data-id="{{dish.id}}"
+                      data-index="{{dIndex}}"
+                      catchtouchstart="onDishTouchStart"
+                      catchtouchmove="onDishTouchMove"
+                      catchtouchend="onDishTouchEnd"
+                      catchtouchcancel="onDishTouchEnd"
+                    >
+                      <image class="dish-cover" src="{{dish.image}}" mode="aspectFill"></image>
+                      <view class="dish-content">
+                        <view class="dish-title-row">
+                          <text class="dish-name">{{dish.name}}</text>
+                          <text class="dish-price">{{dish.priceText}}</text>
+                        </view>
+                        <text class="dish-desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+                        <view class="dish-stats">
+                          <text>月售{{dish.monthlySales || 0}}</text>
+                          <text>库存{{dish.stock != null ? dish.stock : '--'}}</text>
+                        </view>
+                      </view>
+                    </view>
+                    <view class="dish-actions">
+                      <button
+                        class="pill-btn"
+                        size="mini"
+                        data-id="{{dish.id}}"
+                        data-stop-drag="true"
+                        mark:stopDrag="true"
+                        catchtap="onEditDish"
+                      >
+                        编辑
+                      </button>
+                    </view>
+                  </view>
+                </block>
+              </view>
+              <view wx:if="{{!activeDishes.length}}" class="empty">该分类暂时没有菜品</view>
+            </scroll-view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+  <admin-tabbar active-key="menuDesigner" bind:change="onTabChange"></admin-tabbar>
+</view>

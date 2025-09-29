@@ -1,0 +1,6 @@
+{
+  "component": true,
+  "usingComponents": {
+    "order-status-tag": "/components/order-status-tag/index"
+  }
+}

@@ -1,0 +1,32 @@
+<view class="order-card" wx:if="{{orderView}}">
+  <view class="order-header">
+    <view>
+      <text class="order-no">{{orderView.orderNo}}</text>
+      <text class="order-time">{{orderView.createdAtText}}</text>
+    </view>
+    <order-status-tag status="{{orderView.status}}" text="{{statusText}}"></order-status-tag>
+  </view>
+  <view class="order-items">
+    <block wx:for="{{orderView.items}}" wx:key="dishId" wx:for-item="orderItem">
+      <view class="order-item-row">
+        <text class="item-name">{{orderItem.name}} × {{orderItem.quantity}}</text>
+        <text class="item-price">¥{{orderItem.totalPriceText}}</text>
+      </view>
+      <view class="item-options" wx:if="{{orderItem.optionsArray.length}}">
+        <block wx:for="{{orderItem.optionsArray}}" wx:key="label" wx:for-item="option">
+          <text class="option-text">{{option.label}}：{{option.value}}</text>
+        </block>
+      </view>
+    </block>
+  </view>
+  <view class="order-footer">
+    <text class="order-total">¥{{orderView.totalPriceText}}</text>
+    <view class="order-actions">
+      <block wx:if="{{showActions}}">
+        <button class="secondary" wx:if="{{secondaryActionText}}" bindtap="onSecondary">{{secondaryActionText}}</button>
+        <button class="primary" wx:if="{{actionText}}" bindtap="onPrimary">{{actionText}}</button>
+      </block>
+      <button bindtap="onView">{{viewText}}</button>
+    </view>
+  </view>
+</view>
