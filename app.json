@@ -5,7 +5,7 @@
     "pages/admin/category-list/index",
     "pages/admin/dish-list/index",
     "pages/admin/dish-edit/index",
-    "pages/admin/option-library/index",
+    "pages/admin/menu-users/index",
     "pages/admin/menu-designer/index",
     "pages/admin/order-overview/index",
     "pages/customer/menu/index",

@@ -3,7 +3,6 @@
     <view class="option-block">
       <view class="option-header">
         <text class="option-name">{{item.name}}</text>
-        <text class="option-required" wx:if="{{item.required}}">*</text>
       </view>
       <view class="option-choices">
         <block wx:for="{{item.choices}}" wx:key="value" wx:for-item="choice">

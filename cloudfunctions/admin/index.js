@@ -9,6 +9,7 @@ const COLLECTIONS = {
   USERS: 'users',
   MENUS: 'menus',
   MENU_ROLES: 'menu_roles',
+  MENU_INVITATIONS: 'menu_invitations',
   CATEGORIES: 'categories',
   OPTIONS: 'options',
   DISHES: 'dishes',
@@ -16,6 +17,21 @@ const COLLECTIONS = {
   ORDERS: 'orders',
   NOTIFICATIONS: 'notifications',
 };
+
+const ROLE_PRIORITY = {
+  admin: 1,
+  chef: 2,
+  customer: 3,
+};
+
+const ROLE_LABELS = {
+  admin: '管理员',
+  chef: '厨师',
+  customer: '顾客',
+};
+
+const ALLOWED_ROLES = Object.keys(ROLE_PRIORITY);
+const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
 
 class CloudFunctionError extends Error {
   constructor(code, message) {
@@ -57,7 +73,19 @@ const ensureUser = async (openid) => {
   const users = db.collection(COLLECTIONS.USERS);
   try {
     const existing = await users.doc(userId).get();
-    return normalizeDoc(existing.data);
+    const user = normalizeDoc(existing.data);
+    if (typeof user.profileCompleted === 'undefined') {
+      const profileCompleted = Boolean(user.nickname && user.avatar);
+      await users.doc(userId).update({
+        data: {
+          profileCompleted,
+          updatedAt: Date.now(),
+        },
+      });
+      user.profileCompleted = profileCompleted;
+      user.updatedAt = Date.now();
+    }
+    return user;
   } catch (error) {
     if (error?.errCode !== 'DOCUMENT_NOT_FOUND' && !error?.errMsg?.includes('document.get:fail')) {
       throw error;
@@ -65,8 +93,9 @@ const ensureUser = async (openid) => {
   }
   const user = {
     id: userId,
-    nickname: '云开发管理员',
-    avatar: 'https://dummyimage.com/100x100/1479ff/ffffff&text=DIY',
+    nickname: '',
+    avatar: '',
+    profileCompleted: false,
     createdAt: now,
     updatedAt: now,
     openid,
@@ -95,13 +124,14 @@ const ensureMenuRoleCache = async (ctx) => {
 
 const upsertMenuRole = async (userId, menuId, roles) => {
   const now = Date.now();
+  const incomingRoles = Array.isArray(roles) ? roles : [roles];
   const existing = await db
     .collection(COLLECTIONS.MENU_ROLES)
     .where({ userId, menuId })
     .get();
   if (existing.data.length > 0) {
     const docId = existing.data[0]._id;
-    const nextRoles = Array.from(new Set([...(existing.data[0].roles || []), ...roles]));
+    const nextRoles = normalizeRoles([...(existing.data[0].roles || []), ...incomingRoles]);
     await db.collection(COLLECTIONS.MENU_ROLES).doc(docId).update({
       data: { roles: nextRoles, updatedAt: now },
     });
@@ -112,7 +142,7 @@ const upsertMenuRole = async (userId, menuId, roles) => {
     id: docId,
     userId,
     menuId,
-    roles,
+    roles: normalizeRoles(incomingRoles),
     createdAt: now,
     updatedAt: now,
   };
@@ -164,7 +194,6 @@ const ensureBootstrapData = async (ctx) => {
       {
         id: 'opt-001',
         name: '辣度',
-        required: true,
         defaultChoice: 'mild',
         choices: [
           { label: '不辣', value: 'none', sortOrder: 10 },
@@ -176,7 +205,6 @@ const ensureBootstrapData = async (ctx) => {
       {
         id: 'opt-002',
         name: '份量',
-        required: false,
         defaultChoice: 'regular',
         choices: [
           { label: '小份', value: 'small', sortOrder: 10 },
@@ -190,7 +218,6 @@ const ensureBootstrapData = async (ctx) => {
         id: option.id,
         menuId,
         name: option.name,
-        required: option.required,
         defaultChoice: option.defaultChoice,
         choices: option.choices,
         createdAt: now,
@@ -280,6 +307,41 @@ const ensureMenuAccess = async (ctx, menuId, requiredRole = null) => {
 
 const assertAdmin = async (ctx, menuId) => ensureMenuAccess(ctx, menuId, 'admin');
 
+const normalizeRoles = (roles = []) => {
+  const unique = [];
+  roles.forEach((role) => {
+    if (!role || !ALLOWED_ROLES.includes(role)) {
+      return;
+    }
+    if (!unique.includes(role)) {
+      unique.push(role);
+    }
+  });
+  unique.sort((a, b) => (ROLE_PRIORITY[a] || 99) - (ROLE_PRIORITY[b] || 99));
+  return unique;
+};
+
+const fetchUsersByIds = async (ids = []) => {
+  const uniqueIds = Array.from(new Set(ids.filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return new Map();
+  }
+  const chunkSize = 10;
+  const usersById = new Map();
+  for (let index = 0; index < uniqueIds.length; index += chunkSize) {
+    const slice = uniqueIds.slice(index, index + chunkSize);
+    const res = await db
+      .collection(COLLECTIONS.USERS)
+      .where({ _id: _.in(slice) })
+      .get();
+    res.data.forEach((doc) => {
+      const normalized = normalizeDoc(doc);
+      usersById.set(normalized.id, normalized);
+    });
+  }
+  return usersById;
+};
+
 const pick = (source, keys) => {
   const result = {};
   keys.forEach((key) => {
@@ -288,6 +350,34 @@ const pick = (source, keys) => {
     }
   });
   return result;
+};
+
+const sanitizeOptionPayload = (option = {}) => {
+  const rawChoices = Array.isArray(option.choices) ? option.choices : [];
+  const seen = new Set();
+  const choices = [];
+  rawChoices.forEach((choice, index) => {
+    if (!choice) {
+      return;
+    }
+    const label = `${choice.label || ''}`.trim();
+    if (!label) {
+      return;
+    }
+    const value = `${choice.value || ''}`.trim() || label;
+    if (seen.has(value)) {
+      return;
+    }
+    seen.add(value);
+    const sortOrder = typeof choice.sortOrder === 'number' ? choice.sortOrder : Date.now() + index;
+    choices.push({ label, value, sortOrder });
+  });
+  choices.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  let defaultChoice = option.defaultChoice;
+  if (!defaultChoice || !choices.some((item) => item.value === defaultChoice)) {
+    defaultChoice = choices[0] ? choices[0].value : null;
+  }
+  return { choices, defaultChoice };
 };
 
 const handlers = {
@@ -336,6 +426,29 @@ const handlers = {
 
   getCurrentUser: async (ctx) => ctx.user,
 
+  updateCurrentUser: async (ctx, payload = {}) => {
+    const updates = {};
+    if (typeof payload.nickname === 'string') {
+      updates.nickname = payload.nickname.trim();
+    }
+    if (typeof payload.avatar === 'string') {
+      updates.avatar = payload.avatar.trim();
+    }
+    if (typeof payload.profileCompleted === 'boolean') {
+      updates.profileCompleted = payload.profileCompleted;
+    }
+    if (Object.keys(updates).length === 0) {
+      return ctx.user;
+    }
+    updates.updatedAt = Date.now();
+    await db.collection(COLLECTIONS.USERS).doc(ctx.user.id).update({ data: updates });
+    ctx.user = {
+      ...ctx.user,
+      ...updates,
+    };
+    return ctx.user;
+  },
+
   getMenusForCurrentUser: async (ctx) => {
     const rolesMap = await ensureMenuRoleCache(ctx);
     if (rolesMap.size === 0) {
@@ -359,6 +472,186 @@ const handlers = {
       }
     });
     return result;
+  },
+
+  getMenuUsers: async (ctx, payload = {}) => {
+    const { menuId, page = 1, pageSize = 20 } = payload;
+    if (!menuId) {
+      throw new CloudFunctionError('invalid_payload', 'menuId_required');
+    }
+    await assertAdmin(ctx, menuId);
+    const menu = await getDocumentById(COLLECTIONS.MENUS, menuId);
+    if (!menu) {
+      throw new CloudFunctionError('not_found', 'menu_not_found');
+    }
+    const safePage = Math.max(parseInt(page, 10) || 1, 1);
+    const safePageSize = Math.max(parseInt(pageSize, 10) || 20, 1);
+    const roleSnapshot = await db.collection(COLLECTIONS.MENU_ROLES).where({ menuId }).get();
+    const roleEntries = roleSnapshot.data.map((entry) => normalizeDoc(entry));
+    const usersById = await fetchUsersByIds(roleEntries.map((item) => item.userId));
+    const records = roleEntries
+      .map((entry) => {
+        const user = usersById.get(entry.userId) || {};
+        const roles = normalizeRoles(entry.roles || []);
+        const primaryRole = roles[0] || 'customer';
+        return {
+          userId: entry.userId,
+          nickname: user.nickname || '未命名用户',
+          avatar: user.avatar || '',
+          roles,
+          roleLabels: roles.map((role) => ({ role, label: ROLE_LABELS[role] || role })),
+          primaryRole,
+          createdAt: entry.createdAt || 0,
+          updatedAt: entry.updatedAt || entry.createdAt || 0,
+        };
+      })
+      .sort((a, b) => {
+        const roleDiff = (ROLE_PRIORITY[a.primaryRole] || 99) - (ROLE_PRIORITY[b.primaryRole] || 99);
+        if (roleDiff !== 0) {
+          return roleDiff;
+        }
+        const nameA = `${a.nickname || ''}`;
+        const nameB = `${b.nickname || ''}`;
+        return nameA.localeCompare(nameB, 'zh-Hans-CN');
+      });
+    const total = records.length;
+    const start = (safePage - 1) * safePageSize;
+    const end = start + safePageSize;
+    const items = records.slice(start, end);
+    return {
+      items,
+      total,
+      page: safePage,
+      pageSize: safePageSize,
+      hasMore: end < total,
+    };
+  },
+
+  updateMenuUserRoles: async (ctx, payload = {}) => {
+    const { menuId, userId, roles = [] } = payload;
+    if (!menuId) {
+      throw new CloudFunctionError('invalid_payload', 'menuId_required');
+    }
+    if (!userId) {
+      throw new CloudFunctionError('invalid_payload', 'userId_required');
+    }
+    await assertAdmin(ctx, menuId);
+    const menu = await getDocumentById(COLLECTIONS.MENUS, menuId);
+    if (!menu) {
+      throw new CloudFunctionError('not_found', 'menu_not_found');
+    }
+    const user = await getDocumentById(COLLECTIONS.USERS, userId);
+    if (!user) {
+      throw new CloudFunctionError('not_found', 'user_not_found');
+    }
+    const normalizedRoles = normalizeRoles(Array.isArray(roles) ? roles : [roles]);
+    const now = Date.now();
+    const existingSnapshot = await db.collection(COLLECTIONS.MENU_ROLES).where({ menuId, userId }).get();
+    const existingRaw = existingSnapshot.data[0] || null;
+    const existingDoc = existingRaw ? normalizeDoc(existingRaw) : null;
+    const hadAdmin = existingDoc?.roles?.includes('admin');
+    const removingAdmin = hadAdmin && !normalizedRoles.includes('admin');
+    if (removingAdmin) {
+      const allRoles = await db.collection(COLLECTIONS.MENU_ROLES).where({ menuId }).get();
+      const adminCount = allRoles.data.filter((item) => Array.isArray(item.roles) && item.roles.includes('admin')).length;
+      if (adminCount <= 1) {
+        throw new CloudFunctionError('invalid_operation', 'at_least_one_admin_required');
+      }
+    }
+    if (!normalizedRoles.length) {
+      if (existingDoc) {
+        await db.collection(COLLECTIONS.MENU_ROLES).doc(existingDoc._id || existingDoc.id).remove();
+      }
+      ctx.menuRoleMap = null;
+      return { menuId, userId, roles: [] };
+    }
+    if (existingDoc) {
+      await db.collection(COLLECTIONS.MENU_ROLES).doc(existingDoc._id || existingDoc.id).update({
+        data: { roles: normalizedRoles, updatedAt: now },
+      });
+    } else {
+      const id = generateId('mr');
+      await db.collection(COLLECTIONS.MENU_ROLES).doc(id).set({
+        data: {
+          id,
+          menuId,
+          userId,
+          roles: normalizedRoles,
+          createdAt: now,
+          updatedAt: now,
+        },
+      });
+    }
+    ctx.menuRoleMap = null;
+    return { menuId, userId, roles: normalizedRoles };
+  },
+
+  createMenuInvite: async (ctx, payload = {}) => {
+    const { menuId, role = 'customer' } = payload;
+    if (!menuId) {
+      throw new CloudFunctionError('invalid_payload', 'menuId_required');
+    }
+    await assertAdmin(ctx, menuId);
+    const menu = await getDocumentById(COLLECTIONS.MENUS, menuId);
+    if (!menu) {
+      throw new CloudFunctionError('not_found', 'menu_not_found');
+    }
+    const now = Date.now();
+    const inviteRole = ALLOWED_ROLES.includes(role) ? role : 'customer';
+    const token = generateId('invite');
+    const expiresAt = now + INVITE_TTL;
+    const doc = {
+      id: token,
+      token,
+      menuId,
+      role: inviteRole,
+      createdBy: ctx.user.id,
+      createdAt: now,
+      expiresAt,
+      lastUsedAt: null,
+    };
+    await db.collection(COLLECTIONS.MENU_INVITATIONS).doc(token).set({ data: doc });
+    return {
+      token,
+      menuId,
+      role: inviteRole,
+      menuName: menu.name,
+      expiresAt,
+      path: `/pages/menu-selector/index?menuId=${menuId}&inviteToken=${token}`,
+    };
+  },
+
+  acceptMenuInvite: async (ctx, payload = {}) => {
+    const { token, menuId: hintedMenuId } = payload;
+    if (!token) {
+      throw new CloudFunctionError('invalid_payload', 'token_required');
+    }
+    const invitation = await getDocumentById(COLLECTIONS.MENU_INVITATIONS, token);
+    if (!invitation) {
+      throw new CloudFunctionError('invalid_invite', 'invalid_invite');
+    }
+    if (hintedMenuId && invitation.menuId !== hintedMenuId) {
+      throw new CloudFunctionError('invalid_invite', 'invite_mismatch');
+    }
+    if (invitation.expiresAt && invitation.expiresAt < Date.now()) {
+      throw new CloudFunctionError('invite_expired', 'invite_expired');
+    }
+    const menu = await getDocumentById(COLLECTIONS.MENUS, invitation.menuId);
+    if (!menu) {
+      throw new CloudFunctionError('not_found', 'menu_not_found');
+    }
+    const roleToGrant = ALLOWED_ROLES.includes(invitation.role) ? invitation.role : 'customer';
+    const updated = await upsertMenuRole(ctx.user.id, invitation.menuId, [roleToGrant]);
+    await db
+      .collection(COLLECTIONS.MENU_INVITATIONS)
+      .doc(invitation._id || invitation.id)
+      .update({ data: { lastUsedAt: Date.now() } });
+    ctx.menuRoleMap = null;
+    return {
+      menuId: invitation.menuId,
+      roles: normalizeRoles(updated.roles || []),
+      menu,
+    };
   },
 
   deleteMenu: async (ctx, payload = {}) => {
@@ -497,7 +790,13 @@ const handlers = {
       .where({ menuId: payload.menuId })
       .orderBy('name', 'asc')
       .get();
-    return res.data.map(normalizeDoc);
+    return res.data.map((item) => {
+      const doc = normalizeDoc(item);
+      if (doc && Object.prototype.hasOwnProperty.call(doc, 'required')) {
+        delete doc.required;
+      }
+      return doc;
+    });
   },
 
   upsertOption: async (ctx, payload) => {
@@ -508,11 +807,18 @@ const handlers = {
     }
     await assertAdmin(ctx, menuId);
     const now = Date.now();
+    const { choices, defaultChoice } = sanitizeOptionPayload(option);
     if (option.id) {
-      const allowed = pick(option, ['name', 'choices', 'required', 'defaultChoice']);
+      const allowed = pick(option, ['name']);
+      allowed.choices = choices;
+      allowed.defaultChoice = defaultChoice;
       allowed.updatedAt = now;
+      allowed.required = _.remove();
       await db.collection(COLLECTIONS.OPTIONS).doc(option.id).update({ data: allowed });
       const updated = await getDocumentById(COLLECTIONS.OPTIONS, option.id);
+      if (updated && Object.prototype.hasOwnProperty.call(updated, 'required')) {
+        delete updated.required;
+      }
       return updated;
     }
     const id = generateId('opt');
@@ -520,13 +826,15 @@ const handlers = {
       id,
       menuId,
       name: option.name,
-      choices: option.choices || [],
-      required: option.required || false,
-      defaultChoice: option.defaultChoice || null,
+      choices,
+      defaultChoice,
       createdAt: now,
       updatedAt: now,
     };
     await db.collection(COLLECTIONS.OPTIONS).doc(id).set({ data: doc });
+    if (Object.prototype.hasOwnProperty.call(doc, 'required')) {
+      delete doc.required;
+    }
     return doc;
   },
 

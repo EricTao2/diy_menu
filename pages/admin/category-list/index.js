@@ -24,6 +24,7 @@ createPage({
     menu: null,
     newCategoryName: '',
     loading: false,
+    transitionClass: '',
   },
   mapStoreToData,
   async onLoad() {
@@ -102,7 +103,6 @@ createPage({
       });
     },
     async onDeleteCategory(event) {
-        console.log("1111111111")
       const { id } = event.currentTarget.dataset;
       if (id === this.data.menu.defaultCategoryId) {
         wx.showToast({ title: '默认分类', icon: 'none' });

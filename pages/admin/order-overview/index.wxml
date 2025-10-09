@@ -2,7 +2,7 @@
   <scroll-view class="page-content" scroll-y enable-flex>
     <view class="page-inner with-tabbar {{transitionClass}}">
       <view class="top-bar">
-        <text class="page-title">订单概览</text>
+        <text class="page-title">订单</text>
       </view>
       <view class="loading" wx:if="{{loading}}">加载中</view>
       <block wx:elif="{{overview}}">

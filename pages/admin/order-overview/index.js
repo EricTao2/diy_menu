@@ -81,7 +81,7 @@ createPage({
         const orders = await getOrdersByMenu(state.activeMenuId, 'all');
         this.composeOverview(orders || []);
       } catch (error) {
-        console.error('加载订单概览失败', error);
+        console.error('加载订单失败', error);
         wx.showToast({ title: '操作失败', icon: 'none' });
         this.composeOverview([]);
       } finally {

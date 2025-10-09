@@ -77,6 +77,7 @@ createPage({
     },
     saving: false,
     deleting: false,
+    transitionClass: '',
   },
   mapStoreToData,
   async onLoad(query) {

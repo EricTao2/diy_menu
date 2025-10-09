@@ -23,10 +23,6 @@
   font-weight: 600;
 }
 
-.option-required {
-  color: var(--danger-color);
-}
-
 .option-choices {
   display: flex;
   flex-wrap: wrap;

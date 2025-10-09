@@ -3,13 +3,30 @@
     <view class="page-inner with-tabbar {{transitionClass}}">
       <view class="loading" wx:if="{{loading}}">加载中</view>
       <block wx:else>
-        <view class="top-bar">
-          <text class="page-title">菜单管理</text>
-          <view class="top-actions">
-            <button class="icon-btn" size="mini" bindtap="onAddCategory">新增分类</button>
-            <button class="icon-btn primary" size="mini" bindtap="onAddDish">新增菜品</button>
+        <view class="designer-actions">
+          <button class="icon-btn designer-action-btn" size="mini" bindtap="onBackToMenuSelector">菜单选择</button>
+          <button class="icon-btn designer-action-btn" size="mini" bindtap="onAddDish">新增菜品</button>
+        </view>
+        <view class="menu-hero">
+          <view class="menu-hero__media">
+            <image
+              wx:if="{{heroImage}}"
+              class="menu-hero__image"
+              src="{{heroImage}}"
+              mode="aspectFill"
+            ></image>
+            <view wx:else class="menu-hero__placeholder">
+              <text class="menu-hero__placeholder-icon">MENU</text>
+            </view>
+          </view>
+          <view class="menu-hero__info">
+            <view class="menu-hero__text">
+              <text class="menu-hero__title">{{heroTitle}}</text>
+              <text class="menu-hero__desc" wx:if="{{heroSubtitle}}">{{heroSubtitle}}</text>
+            </view>
           </view>
         </view>
+
         <view class="status-tabs">
           <block wx:for="{{statusFilters}}" wx:key="key" wx:for-item="item">
             <view
@@ -34,13 +51,22 @@
                   data-id="{{category.id}}"
                   data-index="{{index}}"
                   bindtap="onSelectCategory"
-                  catchtouchstart="onCategoryTouchStart"
-                  catchtouchmove="onCategoryTouchMove"
-                  catchtouchend="onCategoryTouchEnd"
-                  catchtouchcancel="onCategoryTouchEnd"
                 >
-                  <view class="category-item-main">
-                    <text class="category-name">{{category.name}}</text>
+                  <text class="category-name">{{category.name}}</text>
+                  <view
+                    class="category-handle"
+                    data-id="{{category.id}}"
+                    data-index="{{index}}"
+                    data-drag-handle="true"
+                    catchtap="noop"
+                    catchtouchstart="onCategoryTouchStart"
+                    catchtouchmove="onCategoryTouchMove"
+                    catchtouchend="onCategoryTouchEnd"
+                    catchtouchcancel="onCategoryTouchEnd"
+                  >
+                    <view class="category-handle__bar"></view>
+                    <view class="category-handle__bar"></view>
+                    <view class="category-handle__bar"></view>
                   </view>
                 </view>
               </block>
@@ -55,39 +81,49 @@
                     data-id="{{dish.id}}"
                     data-index="{{dIndex}}"
                   >
-                    <view
-                      class="dish-main"
-                      data-id="{{dish.id}}"
-                      data-index="{{dIndex}}"
-                      catchtouchstart="onDishTouchStart"
-                      catchtouchmove="onDishTouchMove"
-                      catchtouchend="onDishTouchEnd"
-                      catchtouchcancel="onDishTouchEnd"
-                    >
-                      <image class="dish-cover" src="{{dish.image}}" mode="aspectFill"></image>
-                      <view class="dish-content">
-                        <view class="dish-title-row">
-                          <text class="dish-name">{{dish.name}}</text>
-                          <text class="dish-price">{{dish.priceText}}</text>
-                        </view>
-                        <text class="dish-desc" wx:if="{{dish.description}}">{{dish.description}}</text>
-                        <view class="dish-stats">
-                          <text>月售{{dish.monthlySales || 0}}</text>
-                          <text>库存{{dish.stock != null ? dish.stock : '--'}}</text>
-                        </view>
+                    <image class="dish-cover" src="{{dish.image}}" mode="aspectFill"></image>
+                    <view class="dish-content">
+                      <view class="dish-header">
+                        <text class="dish-name">{{dish.name}}</text>
+                      </view>
+                      <text class="dish-price">{{dish.priceText}}</text>
+                      <text class="dish-desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+                      <view class="dish-stats">
+                        <text>月售 {{dish.monthlySales || 0}}</text>
                       </view>
                     </view>
                     <view class="dish-actions">
-                      <button
-                        class="pill-btn"
-                        size="mini"
-                        data-id="{{dish.id}}"
-                        data-stop-drag="true"
-                        mark:stopDrag="true"
-                        catchtap="onEditDish"
-                      >
-                        编辑
-                      </button>
+                      <view class="dish-actions__column">
+                        <view
+                          class="dish-handle-button"
+                          data-id="{{dish.id}}"
+                          data-index="{{dIndex}}"
+                          data-drag-handle="true"
+                          catchtap="noop"
+                          catchtouchstart="onDishTouchStart"
+                          catchtouchmove="onDishTouchMove"
+                          catchtouchend="onDishTouchEnd"
+                          catchtouchcancel="onDishTouchEnd"
+                        >
+                          <view class="dish-handle-icon">
+                            <view class="dish-handle__bar"></view>
+                            <view class="dish-handle__bar"></view>
+                            <view class="dish-handle__bar"></view>
+                          </view>
+                        </view>
+                        <view
+                          class="icon-button edit-button"
+                          data-id="{{dish.id}}"
+                          data-stop-drag="true"
+                          mark:stopDrag="true"
+                          catchtap="onEditDish"
+                          role="button"
+                          hover-class="icon-button--active"
+                        >
+                          <image class="edit-icon" src="{{editIcon}}" mode="aspectFill" />
+                          <text class="sr-only">编辑</text>
+                        </view>
+                      </view>
                     </view>
                   </view>
                 </block>

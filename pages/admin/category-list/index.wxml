@@ -1,28 +1,73 @@
 <view class="page {{themeClass}}">
-  <view class="container">
-    <view class="section-title">分类管理</view>
-    <view class="add-row">
-      <input
-        placeholder="新分类名称"
-        value="{{newCategoryName}}"
-        bindinput="onInput"
-      />
-      <button class="primary" bindtap="onAddCategory">添加分类</button>
-    </view>
-    <view class="sort-hint">长按拖拽可调整排序</view>
-    <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
-      <view class="category-card">
-        <view class="category-info">
-          <text>{{category.name}}</text>
-          <text class="default-tag" wx:if="{{category.id === menu.defaultCategoryId}}">默认分类</text>
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">分类管理</text>
+      </view>
+
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">新增分类</text>
+          <text class="section-desc">输入分类名称并快速添加到菜单</text>
         </view>
-        <view class="category-actions">
-          <button size="mini" data-id="{{category.id}}" data-direction="up" bindtap="onMove">↑</button>
-          <button size="mini" data-id="{{category.id}}" data-direction="down" bindtap="onMove">↓</button>
-          <button size="mini" data-id="{{category.id}}" bindtap="onEditCategory">编辑</button>
-          <button size="mini" data-id="{{category.id}}" bindtap="onDeleteCategory">删除</button>
+        <view class="inline-form">
+          <input
+            class="inline-input"
+            placeholder="请输入分类名称"
+            value="{{newCategoryName}}"
+            bindinput="onInput"
+            confirm-type="done"
+          />
+          <button class="primary" bindtap="onAddCategory">添加</button>
         </view>
       </view>
-    </block>
-  </view>
+
+      <view class="card list-card">
+        <view class="section-header">
+          <text class="section-title">全部分类</text>
+          <text class="section-desc">通过上下移动按钮调整展示顺序</text>
+        </view>
+        <block wx:if="{{loading}}">
+          <view class="loading">加载中</view>
+        </block>
+        <block wx:elif="{{categories.length}}">
+          <block wx:for="{{categories}}" wx:key="id" wx:for-item="category" wx:for-index="index">
+            <view class="category-row">
+              <view class="category-info">
+                <text class="category-name">{{category.name}}</text>
+                <text class="tag" wx:if="{{category.id === menu.defaultCategoryId}}">默认</text>
+              </view>
+              <view class="category-actions">
+                <button
+                  class="pill-btn ghost"
+                  size="mini"
+                  data-id="{{category.id}}"
+                  data-direction="up"
+                  bindtap="onMove"
+                  disabled="{{index === 0}}"
+                >
+                  上移
+                </button>
+                <button
+                  class="pill-btn ghost"
+                  size="mini"
+                  data-id="{{category.id}}"
+                  data-direction="down"
+                  bindtap="onMove"
+                  disabled="{{index === categories.length - 1}}"
+                >
+                  下移
+                </button>
+                <button class="pill-btn ghost" size="mini" data-id="{{category.id}}" bindtap="onEditCategory">重命名</button>
+                <button class="pill-btn ghost" size="mini" data-id="{{category.id}}" bindtap="onDeleteCategory">删除</button>
+              </view>
+            </view>
+          </block>
+        </block>
+        <block wx:else>
+          <view class="empty">暂无分类</view>
+        </block>
+      </view>
+    </view>
+  </scroll-view>
 </view>

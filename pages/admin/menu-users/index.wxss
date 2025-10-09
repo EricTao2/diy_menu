@@ -1,0 +1,157 @@
+@import '/style/admin-page.wxss';
+
+.card {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.06);
+}
+
+.share-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.share-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.share-desc {
+  font-size: 24rpx;
+  color: var(--subtext-color);
+  line-height: 1.5;
+}
+
+.share-result {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: rgba(15, 23, 42, 0.04);
+  border-radius: 12rpx;
+  padding: 16rpx;
+}
+
+.share-link {
+  flex: 1;
+  font-size: 24rpx;
+  color: var(--primary-color);
+  word-break: break-all;
+}
+
+.copy-btn {
+  border-radius: 999rpx;
+  padding: 0 28rpx;
+  line-height: 56rpx;
+  font-size: 24rpx;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.copy-btn::after {
+  border: none;
+}
+
+.share-expiry {
+  font-size: 22rpx;
+  color: var(--subtext-color);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.card-meta {
+  font-size: 24rpx;
+  color: var(--subtext-color);
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 16rpx 0;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.user-avatar {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.user-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.user-name {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.role-tag {
+  font-size: 22rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--subtext-color);
+}
+
+.role-admin {
+  background: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+}
+
+.role-chef {
+  background: rgba(16, 185, 129, 0.18);
+  color: #047857;
+}
+
+.role-customer {
+  background: rgba(245, 158, 11, 0.18);
+  color: #b45309;
+}
+
+.edit-btn {
+  border-radius: 999rpx;
+  padding: 0 28rpx;
+  line-height: 60rpx;
+  font-size: 24rpx;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.edit-btn::after {
+  border: none;
+}
+
+.empty,
+.load-more,
+.loading {
+  text-align: center;
+  color: var(--subtext-color);
+  font-size: 24rpx;
+  padding: 16rpx 0;
+}

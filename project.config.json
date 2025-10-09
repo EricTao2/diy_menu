@@ -51,7 +51,7 @@
     "disableSWC": true
   },
   "compileType": "miniprogram",
-  "libVersion": "2.23.1",
+  "libVersion": "3.10.1",
   "appid": "wxc91a7c5f281cf5a6",
   "projectname": "tcb-shop",
   "simulatorType": "wechat",

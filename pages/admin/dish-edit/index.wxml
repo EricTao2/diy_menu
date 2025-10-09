@@ -5,76 +5,99 @@
       <text class="error-toast__text">{{errorMessage}}</text>
     </view>
   </view>
-  <view class="container">
-    <view class="section-title">{{isEdit ? '编辑菜品' : '创建菜品'}}</view>
-    <view class="card">
-      <view class="form-field">
-        <label>菜品名称</label>
-        <input value="{{form.name}}" data-field="name" bindinput="onInput" />
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">{{isEdit ? '编辑菜品' : '创建菜品'}}</text>
       </view>
-      <view class="form-field">
-        <label>价格</label>
-        <input type="digit" value="{{form.price}}" data-field="price" bindinput="onInput" />
-      </view>
-      <view class="form-field">
-        <label>库存</label>
-        <input type="number" value="{{form.stock}}" data-field="stock" bindinput="onInput" />
-      </view>
-      <view class="form-field status-row">
-        <label>售卖状态</label>
-        <switch checked="{{form.status}}" bindchange="onSwitchStatus"></switch>
-        <text class="status-label">{{form.status ? '上架' : '下架'}}</text>
-      </view>
-      <view class="form-field">
-        <label>所属分类</label>
-        <picker mode="selector" range="{{categoryPicker}}" bindchange="onCategoryChange">
-          <view class="picker">{{selectedCategoryName || categoryPicker[0]}}</view>
-        </picker>
-      </view>
-      <view class="form-field">
-        <label>主图地址</label>
-        <input value="{{form.image}}" data-field="image" bindinput="onInput" placeholder="https://" />
-      </view>
-      <view class="form-field">
-        <label>描述</label>
-        <textarea value="{{form.description}}" data-field="description" bindinput="onInput"></textarea>
-      </view>
-      <view class="form-field">
-        <label>标签（逗号分隔）</label>
-        <input value="{{form.tags}}" data-field="tags" bindinput="onInput" placeholder="tag1,tag2" />
-      </view>
-    </view>
-    <view class="card">
-      <view class="form-field">
-        <label>关联自定义选项</label>
-      </view>
-      <view class="option-list">
-        <block wx:for="{{options}}" wx:key="id" wx:for-item="option">
-          <view class="option-item" data-option-id="{{option.id}}" bindtap="onOptionToggle">
-            <checkbox
-              value="{{option.id}}"
-              checked="{{!!optionSelectionMap[option.id]}}"
-              data-option-id="{{option.id}}"
-              catchtap="onOptionToggle"
-            ></checkbox>
-            <view>
-              <text class="option-name">{{option.name}} <text wx:if="{{option.required}}" class="required">*</text></text>
-              <text class="option-sub">{{option.choices.length}}个可选项</text>
-            </view>
+
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">基础信息</text>
+          <text class="section-desc">完善菜品名称、价格与展示信息</text>
+        </view>
+        <view class="form-field">
+          <label>菜品名称</label>
+          <input value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="请输入菜品名称" />
+        </view>
+        <view class="form-grid">
+          <view class="form-field">
+            <label>价格</label>
+            <input type="digit" value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="请输入价格" />
           </view>
-        </block>
+          <view class="form-field">
+            <label>库存</label>
+            <input type="number" value="{{form.stock}}" data-field="stock" bindinput="onInput" placeholder="库存数量" />
+          </view>
+        </view>
+        <view class="form-field status-row">
+          <label>售卖状态</label>
+          <view class="status-switch">
+            <switch checked="{{form.status}}" bindchange="onSwitchStatus"></switch>
+            <text class="status-label">{{form.status ? '上架' : '下架'}}</text>
+          </view>
+        </view>
+        <view class="form-field">
+          <label>所属分类</label>
+          <picker mode="selector" range="{{categoryPicker}}" bindchange="onCategoryChange">
+            <view class="picker">{{selectedCategoryName || categoryPicker[0]}}</view>
+          </picker>
+        </view>
+        <view class="form-field">
+          <label>主图地址</label>
+          <input value="{{form.image}}" data-field="image" bindinput="onInput" placeholder="https://" />
+        </view>
+        <view class="form-field">
+          <label>描述</label>
+          <textarea value="{{form.description}}" data-field="description" bindinput="onInput" placeholder="菜品简介"></textarea>
+        </view>
+        <view class="form-field">
+          <label>标签（逗号分隔）</label>
+          <input value="{{form.tags}}" data-field="tags" bindinput="onInput" placeholder="示例：新品,推荐" />
+        </view>
+      </view>
+
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">自定义选项</text>
+          <text class="section-desc">关联可搭配的选项组，提升点餐体验</text>
+        </view>
+        <view class="option-list">
+          <block wx:if="{{options.length}}">
+            <block wx:for="{{options}}" wx:key="id" wx:for-item="option">
+              <view class="option-item" data-option-id="{{option.id}}" bindtap="onOptionToggle">
+                <checkbox
+                  value="{{option.id}}"
+                  checked="{{!!optionSelectionMap[option.id]}}"
+                  data-option-id="{{option.id}}"
+                  catchtap="onOptionToggle"
+                ></checkbox>
+                <view class="option-content">
+                  <text class="option-name">
+                    {{option.name}}
+                  </text>
+                  <text class="option-sub">{{option.choices.length}} 个可选项</text>
+                </view>
+              </view>
+            </block>
+          </block>
+          <block wx:else>
+            <view class="empty">暂未创建自定义选项</view>
+          </block>
+        </view>
+      </view>
+
+      <view class="form-actions page-actions">
+        <button
+          wx:if="{{isEdit}}"
+          class="danger"
+          loading="{{deleting}}"
+          bindtap="onDeleteDish"
+        >
+          删除菜品
+        </button>
+        <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存菜品</button>
       </view>
     </view>
-    <view class="form-actions">
-      <button
-        wx:if="{{isEdit}}"
-        class="danger"
-        loading="{{deleting}}"
-        bindtap="onDeleteDish"
-      >
-        删除菜品
-      </button>
-      <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存菜品</button>
-    </view>
-  </view>
+  </scroll-view>
 </view>

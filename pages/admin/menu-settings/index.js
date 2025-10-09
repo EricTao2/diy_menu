@@ -9,6 +9,9 @@ import {
   deleteCategory,
   sortCategories,
   deleteMenu,
+  getOptionsByMenu,
+  upsertOption,
+  deleteOption,
 } from '../../../services/api';
 import { ADMIN_BOTTOM_TABS } from '../../../common/admin-tabs';
 import { ensureRole } from '../../../utils/auth';
@@ -17,6 +20,12 @@ const store = app.getStore();
 const themeManager = app.getThemeManager();
 
 const PAGE_TRANSITION_DURATION = 180;
+
+const slugify = (text = '') =>
+  `${text}`
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '');
 
 const ADMIN_TAB_URL_MAP = ADMIN_BOTTOM_TABS.reduce((acc, tab) => {
   acc[tab.key] = tab.url;
@@ -40,6 +49,15 @@ createPage({
     themeOptions: [],
     saving: false,
     categories: [],
+    options: [],
+    optionForm: {
+      id: '',
+      name: '',
+      defaultChoice: '',
+      choices: [],
+    },
+    optionChoiceInput: '',
+    optionEditing: false,
     transitionClass: '',
   },
   mapStoreToData,
@@ -52,7 +70,11 @@ createPage({
     } else if (this.initialized) {
       const { activeMenuId } = store.getState();
       if (activeMenuId) {
-        await Promise.all([this.loadMenu(activeMenuId), this.loadCategories(activeMenuId)]);
+        await Promise.all([
+          this.loadMenu(activeMenuId),
+          this.loadCategories(activeMenuId),
+          this.loadOptions(activeMenuId),
+        ]);
       }
     }
     this.playEnterAnimation();
@@ -80,7 +102,11 @@ createPage({
       this.setData({
         themeOptions: themes,
       });
-      await Promise.all([this.loadMenu(state.activeMenuId), this.loadCategories(state.activeMenuId)]);
+      await Promise.all([
+        this.loadMenu(state.activeMenuId),
+        this.loadCategories(state.activeMenuId),
+        this.loadOptions(state.activeMenuId),
+      ]);
       this.initialized = true;
       this.skipNextShowRefresh = true;
     },
@@ -108,6 +134,14 @@ createPage({
         console.error('加载分类失败', error);
       }
     },
+    async loadOptions(menuId) {
+      try {
+        const options = await getOptionsByMenu(menuId);
+        this.setData({ options });
+      } catch (error) {
+        console.error('加载选项失败', error);
+      }
+    },
     onInput(event) {
       const { field } = event.currentTarget.dataset;
       this.setData({
@@ -121,6 +155,168 @@ createPage({
       const { value } = event.detail;
       this.setData({
         form: { ...this.data.form, theme: value },
+      });
+    },
+    getOptionFormTemplate() {
+      return {
+        id: '',
+        name: '',
+        defaultChoice: '',
+        choices: [],
+      };
+    },
+    ensureOptionDefaultChoice(choices, desiredValue) {
+      if (!Array.isArray(choices) || !choices.length) {
+        return '';
+      }
+      const exists = choices.some((item) => item.value === desiredValue);
+      return exists ? desiredValue : choices[0].value;
+    },
+    resetOptionForm() {
+      this.setData({
+        optionForm: this.getOptionFormTemplate(),
+        optionChoiceInput: '',
+        optionEditing: false,
+      });
+    },
+    onStartCreateOption() {
+      this.resetOptionForm();
+    },
+    onEditOption(event) {
+      const { id } = event.currentTarget.dataset;
+      const option = this.data.options.find((item) => item.id === id);
+      if (!option) {
+        return;
+      }
+      const defaultChoice = this.ensureOptionDefaultChoice(option.choices, option.defaultChoice);
+      const restOption = { ...option };
+      if (Object.prototype.hasOwnProperty.call(restOption, 'required')) {
+        delete restOption.required;
+      }
+      this.setData({
+        optionForm: { ...restOption, defaultChoice },
+        optionChoiceInput: '',
+        optionEditing: true,
+      });
+    },
+    onOptionFormInput(event) {
+      const { field } = event.currentTarget.dataset;
+      this.setData({
+        optionForm: { ...this.data.optionForm, [field]: event.detail.value },
+      });
+    },
+    onOptionChoiceInput(event) {
+      this.setData({ optionChoiceInput: event.detail.value });
+    },
+    onAddOptionChoice() {
+      const label = (this.data.optionChoiceInput || '').trim();
+      if (!label) {
+        return;
+      }
+      const value = slugify(label) || label;
+      const choice = { label, value, sortOrder: Date.now() };
+      const nextChoices = [...this.data.optionForm.choices, choice];
+      this.setData({
+        optionForm: {
+          ...this.data.optionForm,
+          choices: nextChoices,
+          defaultChoice: this.ensureOptionDefaultChoice(
+            nextChoices,
+            this.data.optionForm.defaultChoice || choice.value
+          ),
+        },
+        optionChoiceInput: '',
+      });
+    },
+    onRemoveOptionChoice(event) {
+      const { value } = event.currentTarget.dataset;
+      const nextChoices = this.data.optionForm.choices.filter((item) => item.value !== value);
+      this.setData({
+        optionForm: {
+          ...this.data.optionForm,
+          choices: nextChoices,
+          defaultChoice: this.ensureOptionDefaultChoice(
+            nextChoices,
+            this.data.optionForm.defaultChoice
+          ),
+        },
+      });
+    },
+    onOptionDefaultChoiceChange(event) {
+      this.applyOptionDefaultChoice(event.detail.value);
+    },
+    onSelectOptionDefaultChoice(event) {
+      const { value } = event.currentTarget.dataset;
+      this.applyOptionDefaultChoice(value);
+    },
+    applyOptionDefaultChoice(value) {
+      const { choices } = this.data.optionForm;
+      if (!choices || !choices.length) {
+        return;
+      }
+      if (!choices.some((item) => item.value === value)) {
+        return;
+      }
+      this.setData({
+        optionForm: { ...this.data.optionForm, defaultChoice: value },
+      });
+    },
+    async onSaveOption() {
+      const { activeMenuId } = store.getState();
+      const { optionForm } = this.data;
+      if (!activeMenuId) {
+        return;
+      }
+      if (!optionForm.name || !optionForm.choices.length) {
+        wx.showToast({ title: '请完善选项信息', icon: 'none' });
+        return;
+      }
+      const defaultChoice = this.ensureOptionDefaultChoice(optionForm.choices, optionForm.defaultChoice);
+      wx.showLoading({ title: '保存中', mask: true });
+      try {
+        await upsertOption({ ...optionForm, menuId: activeMenuId, defaultChoice });
+        wx.showToast({ title: '已保存', icon: 'success' });
+        await this.loadOptions(activeMenuId);
+        this.resetOptionForm();
+      } catch (error) {
+        console.error('保存自定义选项失败', error);
+        wx.showToast({ title: '操作失败', icon: 'none' });
+      } finally {
+        wx.hideLoading();
+      }
+    },
+    async onDeleteOption(event) {
+      const { id } = event.currentTarget.dataset;
+      if (!id) {
+        return;
+      }
+      wx.showModal({
+        title: '删除选项',
+        content: '删除后将同步移除关联菜品中的该选项，确认继续？',
+        confirmText: '删除',
+        cancelText: '取消',
+        success: async (res) => {
+          if (!res.confirm) {
+            return;
+          }
+          wx.showLoading({ title: '删除中', mask: true });
+          try {
+            await deleteOption(id);
+            wx.showToast({ title: '已删除', icon: 'success' });
+            const { activeMenuId } = store.getState();
+            if (activeMenuId) {
+              await this.loadOptions(activeMenuId);
+            }
+            if (this.data.optionForm.id === id) {
+              this.resetOptionForm();
+            }
+          } catch (error) {
+            console.error('删除自定义选项失败', error);
+            wx.showToast({ title: '操作失败', icon: 'none' });
+          } finally {
+            wx.hideLoading();
+          }
+        },
       });
     },
     async onSubmit() {

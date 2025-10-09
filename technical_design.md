@@ -10,7 +10,7 @@
 
 ## 2. 系统模块划分
 1. **用户与角色模块**：身份识别、角色授权、菜单列表、菜单内多身份切换。
-2. **菜单管理模块（管理员端）**：菜单配置、分类管理、自定义选项库、菜品维护、主题设置；提供所见即所得的菜单工作台，支持拖拽排序、快速上下架以及跳转详情页完成编辑或删除。
+2. **菜单管理模块（管理员端）**：菜单配置、分类管理、自定义选项、菜品维护、主题设置；提供所见即所得的菜单工作台，支持拖拽排序、快速上下架以及跳转详情页完成编辑或删除。
 3. **顾客端菜单浏览模块**：分类列表、菜品详情、购物车、订单提交。
 4. **订单模块**：顾客历史订单、再次下单；厨师订单工作台；管理员订单统计概览。
 5. **通知模块**：触发、记录、推送订单相关消息。
@@ -50,7 +50,7 @@
 | `menu_roles` | `_id`, `menuId`, `userId`, `roles` (数组: admin/chef/customer), `grantedBy`, `createdAt` | 用户在某菜单的角色授权；可多角色。 |
 | `menus` | `_id`, `name`, `description`, `defaultCategoryId`, `theme`, `status`, `createdAt` | 菜单基础信息。 |
 | `categories` | `_id`, `menuId`, `name`, `sortOrder`, `createdAt`, `updatedAt` | 分类信息；`sortOrder` 用于自定义排序。 |
-| `options` | `_id`, `menuId`, `name`, `choices`(数组: `{label, value, sortOrder}`), `required`, `defaultChoice`, `createdAt` | 菜单级自定义选项库。 |
+| `options` | `_id`, `menuId`, `name`, `choices`(数组: `{label, value, sortOrder}`), `defaultChoice`, `createdAt` | 菜单级自定义选项库。 |
 | `dishes` | `_id`, `menuId`, `categoryId`, `name`, `description`, `image`, `price`, `status`, `tags`, `optionIds`(数组), `stock`, `sortOrder`, `createdAt`, `updatedAt` | 菜品数据，包含排序权重与可选项关联。 |
 | `carts` | `_id`, `menuId`, `userId`, `items`(数组: `{dishId, quantity, optionsSnapshot, priceSnapshot}`), `updatedAt` | 用户购物车；选项和价格需存快照以防修改。 |
 | `orders` | `_id`, `menuId`, `userId`, `orderNo`, `status`, `totalPrice`, `items`(数组 `{dishId, name, optionsSnapshot, quantity, unitPrice}`), `remark`, `tableNo`, `pickupType`, `historyRefId`, `createdAt`, `updatedAt`, `handledBy`, `handledRemark` | 订单记录；`historyRefId` 供再次下单关联。 |
@@ -73,7 +73,7 @@
 | `deleteMenu` | 删除菜单 | Input: `menuId` | 删除菜单及其分类、菜品、选项、角色、订单等关联数据。 |
 | `upsertDish` | 新增/更新菜品 | Input: 菜品信息（含 `optionIds`） | 写入时会将 `optionIds` 统一转为字符串并去重，返回详情同样确保去重结果，保障前端勾选状态与后端一致。 |
 | `categoryService` | 分类增删改查、排序更新 | Input: 操作类型与数据 | 内部校验管理员权限。 |
-| `optionService` | 自定义选项库增删改查 | Input: 操作类型与数据 | 维护选项与排序。 |
+| `optionService` | 自定义选项增删改查 | Input: 操作类型与数据 | 维护选项与排序。 |
 | `dishService` | 菜品增删改查、上下架、排序 | Input: 操作类型与数据 | 同步维护 `sortOrder`。 |
 | `cartService` | 购物车增删改查 | Input: `menuId`, `items` | 确保数据一致性，校验库存。 |
 | `orderService` | 提交订单、状态更新、历史查询 | Input: 操作类型、订单数据 | 下单校验、生成编号、写入订单、触发通知。 |
@@ -128,4 +128,3 @@
 ## 13. 迭代与扩展预留
 - 支付接入：预留订单状态字段（如 `awaitingPayment`），便于后续集成微信支付。
 - 数据分析：保留 `order`、`dishes` 累计字段，为后续统计界面提供数据来源。
-- 多门店扩展：`menus` 集合可增加门店字段，与地理位置服务结合。

@@ -17,12 +17,6 @@
   justify-content: space-between;
 }
 
-.switch-row {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-
 .add-choice-row {
   display: flex;
   gap: 12rpx;
@@ -34,6 +28,9 @@
 
 .add-choice-row button {
   flex-shrink: 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 32rpx;
 }
 
 .choices-list {
@@ -52,15 +49,29 @@
   border-radius: 12rpx;
 }
 
+.choice-item.is-default {
+  border: 2rpx solid var(--primary-color);
+  background-color: rgba(31, 111, 235, 0.1);
+}
+
+.choice-main {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+}
+
 .choice-label {
   font-size: 26rpx;
   color: var(--text-color);
 }
 
-.choice-actions {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
+.default-tag {
+  font-size: 22rpx;
+  color: var(--primary-color);
+  background-color: rgba(31, 111, 235, 0.16);
+  padding: 2rpx 10rpx;
+  border-radius: 999rpx;
 }
 
 .options-card {
@@ -94,10 +105,6 @@
   font-weight: 600;
 }
 
-.option-required {
-  color: var(--danger-color);
-}
-
 .option-body {
   display: flex;
   flex-wrap: wrap;
@@ -122,4 +129,35 @@
   text-align: center;
   color: var(--subtext-color);
   padding: 24rpx 0;
+}
+
+.option-form-actions {
+  display: flex;
+  gap: 16rpx;
+  justify-content: flex-end;
+}
+
+.option-btn {
+  flex: 1;
+  border-radius: 999rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 32rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.option-btn::after {
+  border: none;
+}
+
+.option-btn--primary {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.option-btn--secondary {
+  background: rgba(31, 111, 235, 0.08);
+  color: var(--primary-color);
+  border: 1rpx solid rgba(31, 111, 235, 0.16);
 }

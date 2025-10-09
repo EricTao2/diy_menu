@@ -117,3 +117,173 @@
 .bottom-actions button {
   line-height: 96rpx;
 }
+
+.option-section {
+  gap: 32rpx;
+}
+
+.option-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.option-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  padding: 24rpx;
+  border-radius: 20rpx;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.add-choice-row {
+  display: flex;
+  gap: 12rpx;
+}
+
+.add-choice-row input {
+  flex: 1;
+}
+
+.add-choice-row button {
+  flex-shrink: 0;
+  height: 88rpx;
+  line-height: 88rpx;
+  padding: 0 32rpx;
+}
+
+.choices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.choice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16rpx;
+  border-radius: 14rpx;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.choice-item.is-default {
+  border: 2rpx solid var(--primary-color);
+  background: rgba(31, 111, 235, 0.12);
+}
+
+.choice-main {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex: 1;
+}
+
+.choice-label {
+  font-size: 26rpx;
+  color: var(--text-color);
+}
+
+.default-tag {
+  font-size: 22rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 111, 235, 0.18);
+  color: var(--primary-color);
+}
+
+.option-form-actions {
+  display: flex;
+  gap: 16rpx;
+  justify-content: flex-end;
+}
+
+.option-btn {
+  flex: 1;
+  border-radius: 999rpx;
+  line-height: 88rpx;
+  height: 88rpx;
+  padding: 0 32rpx;
+  font-size: 28rpx;
+  border: none;
+}
+
+.option-btn::after {
+  border: none;
+}
+
+.option-btn--primary {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.option-btn--secondary {
+  background: rgba(31, 111, 235, 0.08);
+  color: var(--primary-color);
+  border: 1rpx solid rgba(31, 111, 235, 0.16);
+}
+
+.option-list-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-title {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.option-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  padding: 24rpx;
+  border-radius: 18rpx;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.option-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.option-name {
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.option-card-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.choice-tag {
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 111, 235, 0.16);
+  color: var(--primary-color);
+  font-size: 22rpx;
+}
+
+.option-card-footer {
+  display: flex;
+  gap: 12rpx;
+  justify-content: flex-end;
+}

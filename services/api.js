@@ -18,6 +18,7 @@ export const {
   bootstrapMockData,
   createMenu,
   getCurrentUser,
+  updateCurrentUser,
   getMenusForCurrentUser,
   getMenuDetail,
   updateMenuSettings,
@@ -45,4 +46,8 @@ export const {
   getNotifications,
   markNotificationSent,
   duplicateOrder,
+  getMenuUsers,
+  updateMenuUserRoles,
+  createMenuInvite,
+  acceptMenuInvite,
 } = api;

@@ -1,6 +1,54 @@
+@import '/style/admin-page.wxss';
 @import '/style/form.wxss';
 
+.card {
+  background: var(--card-bg);
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.section-card {
+  gap: 20rpx;
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.section-title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.section-desc {
+  font-size: 24rpx;
+  color: var(--subtext-color);
+}
+
+.form-grid {
+  display: flex;
+  gap: 16rpx;
+  flex-direction: column;
+}
+
+.form-grid .form-field {
+  flex: 1;
+}
+
 .status-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.status-switch {
   display: flex;
   align-items: center;
   gap: 16rpx;
@@ -8,6 +56,71 @@
 
 .status-label {
   color: var(--subtext-color);
+}
+
+.picker {
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(15, 23, 42, 0.08);
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.option-item {
+  display: flex;
+  gap: 16rpx;
+  align-items: flex-start;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(15, 23, 42, 0.08);
+  background: rgba(15, 23, 42, 0.02);
+}
+
+.option-item checkbox::after {
+  border: none;
+}
+
+.option-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.option-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.option-sub {
+  font-size: 24rpx;
+  color: var(--subtext-color);
+}
+
+.empty {
+  text-align: center;
+  color: var(--subtext-color);
+  padding: 32rpx 0;
+}
+
+.page-actions {
+  margin-top: 16rpx;
+  margin-bottom: 100rpx;
+}
+
+.page-actions button {
+  line-height: 90rpx;
+  border-radius: 999rpx;
+}
+
+.page-actions button.danger {
+  background-color: var(--danger-color);
+  color: #ffffff;
 }
 
 .error-toast-mask {
@@ -52,68 +165,4 @@
   flex: 1;
   font-size: 26rpx;
   line-height: 1.5;
-}
-
-.picker {
-  padding: 16rpx;
-  background-color: var(--card-bg);
-  border-radius: 12rpx;
-  border: 1rpx solid rgba(15, 23, 42, 0.08);
-}
-
-.option-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16rpx;
-}
-
-.option-item {
-  display: flex;
-  gap: 16rpx;
-  align-items: flex-start;
-  background-color: rgba(15, 23, 42, 0.04);
-  padding: 16rpx;
-  border-radius: 12rpx;
-}
-
-.option-item checkbox::after {
-  border: none;
-}
-
-.option-name {
-  font-size: 28rpx;
-  font-weight: 600;
-}
-
-.option-name .required {
-  color: var(--danger-color);
-  margin-left: 8rpx;
-}
-
-.option-sub {
-  display: block;
-  font-size: 24rpx;
-  color: var(--subtext-color);
-}
-
-.form-actions {
-  margin-top: 24rpx;
-  margin-bottom: 60rpx;
-}
-
-button.primary,
-button.danger {
-  margin-top: 0;
-}
-
-.form-actions button {
-  border: none;
-  border-radius: 999rpx;
-  padding: 0 32rpx;
-  line-height: 90rpx;
-}
-
-.form-actions button.danger {
-  background-color: var(--danger-color);
-  color: #ffffff;
 }

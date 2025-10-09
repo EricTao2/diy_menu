@@ -31,7 +31,6 @@ createPage({
     form: {
       id: '',
       name: '',
-      required: false,
       defaultChoice: '',
       choices: [],
     },
@@ -81,13 +80,19 @@ createPage({
         form: {
           id: '',
           name: '',
-          required: false,
           defaultChoice: '',
           choices: [],
         },
         choiceInput: '',
         editing: false,
       });
+    },
+    ensureDefaultChoice(choices, desiredValue) {
+      if (!Array.isArray(choices) || choices.length === 0) {
+        return '';
+      }
+      const exists = choices.some((item) => item.value === desiredValue);
+      return exists ? desiredValue : choices[0].value;
     },
     startCreate() {
       this.resetForm();
@@ -96,8 +101,13 @@ createPage({
       const { id } = event.currentTarget.dataset;
       const option = this.data.options.find((item) => item.id === id);
       if (!option) return;
+      const defaultChoice = this.ensureDefaultChoice(option.choices, option.defaultChoice);
+      const restOption = { ...option };
+      if (Object.prototype.hasOwnProperty.call(restOption, 'required')) {
+        delete restOption.required;
+      }
       this.setData({
-        form: { ...option },
+        form: { ...restOption, defaultChoice },
         editing: true,
       });
     },
@@ -105,11 +115,6 @@ createPage({
       const { field } = event.currentTarget.dataset;
       this.setData({
         form: { ...this.data.form, [field]: event.detail.value },
-      });
-    },
-    onToggleRequired(event) {
-      this.setData({
-        form: { ...this.data.form, required: event.detail.value },
       });
     },
     onChoiceInput(event) {
@@ -124,11 +129,12 @@ createPage({
         value: value || label,
         sortOrder: Date.now(),
       };
+      const choices = [...this.data.form.choices, choice];
       this.setData({
         form: {
           ...this.data.form,
-          choices: [...this.data.form.choices, choice],
-          defaultChoice: this.data.form.defaultChoice || choice.value,
+          choices,
+          defaultChoice: this.ensureDefaultChoice(choices, this.data.form.defaultChoice || choice.value),
         },
         choiceInput: '',
       });
@@ -136,16 +142,31 @@ createPage({
     removeChoice(event) {
       const { value } = event.currentTarget.dataset;
       const choices = this.data.form.choices.filter((item) => item.value !== value);
-      let defaultChoice = this.data.form.defaultChoice;
-      if (defaultChoice === value) {
-        defaultChoice = choices[0]?.value || '';
-      }
       this.setData({
-        form: { ...this.data.form, choices, defaultChoice },
+        form: {
+          ...this.data.form,
+          choices,
+          defaultChoice: this.ensureDefaultChoice(choices, this.data.form.defaultChoice),
+        },
       });
     },
     onDefaultChoiceChange(event) {
       const value = event.detail.value;
+      this.applyDefaultChoice(value);
+    },
+    onSelectDefaultChoice(event) {
+      const { value } = event.currentTarget.dataset;
+      if (!value) return;
+      this.applyDefaultChoice(value);
+    },
+    applyDefaultChoice(value) {
+      const { choices } = this.data.form;
+      if (!Array.isArray(choices) || choices.length === 0) {
+        return;
+      }
+      if (!choices.some((item) => item.value === value)) {
+        return;
+      }
       this.setData({
         form: { ...this.data.form, defaultChoice: value },
       });
@@ -157,8 +178,10 @@ createPage({
         wx.showToast({ title: '操作失败', icon: 'none' });
         return;
       }
+      const choices = form.choices;
+      const defaultChoice = this.ensureDefaultChoice(choices, form.defaultChoice);
       try {
-        await upsertOption({ ...form, menuId: activeMenuId });
+        await upsertOption({ ...form, menuId: activeMenuId, defaultChoice });
         wx.showToast({ title: '操作成功', icon: 'success' });
         await this.loadOptions();
         this.resetForm();

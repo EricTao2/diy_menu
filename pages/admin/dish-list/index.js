@@ -25,6 +25,7 @@ createPage({
     selectedCategoryId: '',
     selectedCategoryName: '',
     categoryPickerRange: [],
+    transitionClass: '',
   },
   mapStoreToData,
   async onLoad() {

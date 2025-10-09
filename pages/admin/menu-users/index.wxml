@@ -1,0 +1,75 @@
+<view class="page {{themeClass}}">
+  <scroll-view
+    class="page-content"
+    scroll-y
+    enable-flex
+    lower-threshold="120"
+    bindscrolltolower="onScrollToLower"
+  >
+    <view class="page-inner with-tabbar {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">菜单用户</text>
+        <view class="top-actions">
+          <button
+            class="icon-btn primary"
+            size="mini"
+            loading="{{generatingShare}}"
+            bindtap="onGenerateShareLink"
+          >生成分享链接</button>
+        </view>
+      </view>
+
+      <view class="card share-card">
+        <view class="share-title">链接分享</view>
+        <view class="share-desc">
+          生成小程序分享链接后发送给其他用户，对方打开后将自动加入该菜单并获得顾客身份。
+        </view>
+        <view class="share-result" wx:if="{{shareLink}}">
+          <text class="share-link" selectable="true">{{shareLink}}</text>
+          <button class="copy-btn" size="mini" bindtap="onCopyShareLink">复制</button>
+        </view>
+        <view class="share-expiry" wx:if="{{shareExpiryText}}">有效期至 {{shareExpiryText}}</view>
+      </view>
+
+      <view class="card">
+        <view class="card-header">
+          <text class="card-title">成员列表</text>
+          <text class="card-meta">共 {{total}} 人</text>
+        </view>
+        <view class="loading" wx:if="{{loading && page === 1}}">加载中</view>
+        <block wx:elif="{{users.length}}">
+          <block wx:for="{{users}}" wx:for-item="user" wx:key="userId">
+            <view class="user-row">
+              <image
+                class="user-avatar"
+                src="{{user.avatar || 'https://dummyimage.com/100x100/e5e7eb/9ca3af&text=U'}}"
+                mode="aspectFill"
+              ></image>
+              <view class="user-main">
+                <text class="user-name">{{user.nickname}}</text>
+                <view class="role-tags" wx:if="{{user.roleLabels && user.roleLabels.length}}">
+                  <text
+                    class="role-tag role-{{tag.role}}"
+                    wx:for="{{user.roleLabels}}"
+                    wx:key="role"
+                    wx:for-item="tag"
+                  >{{tag.label}}</text>
+                </view>
+              </view>
+              <button
+                class="edit-btn"
+                size="mini"
+                bindtap="onEditUser"
+                data-user-id="{{user.userId}}"
+              >编辑</button>
+            </view>
+          </block>
+        </block>
+        <view class="empty" wx:elif="{{!loading}}">暂无成员</view>
+        <view class="load-more" wx:if="{{loadingMore}}">加载中...</view>
+        <view class="load-more" wx:elif="{{!hasMore && users.length}}">没有更多了</view>
+      </view>
+    </view>
+  </scroll-view>
+  <admin-tabbar active-key="menuUsers" bind:change="onTabChange"></admin-tabbar>
+</view>

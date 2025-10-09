@@ -19,5 +19,6 @@
     "checkInvalidKey": true,
     "useIsolateContext": true,
     "ignoreDevUnusedFiles": false
-  }
+  },
+  "condition": {}
 }

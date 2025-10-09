@@ -91,9 +91,93 @@
         </view>
         <view class="empty" wx:else>暂无分类</view>
       </view>
+      <view class="card section-card option-section">
+        <view class="option-heading">
+          <view class="section-header">
+            <text class="section-title">自定义选项</text>
+            <text class="section-desc">维护可复用的菜品选项，如辣度、份量等</text>
+          </view>
+          <button class="icon-btn" size="mini" bindtap="onStartCreateOption">新建选项</button>
+        </view>
+        <view class="option-form">
+          <view class="form-field">
+            <label>选项名称</label>
+            <input
+              placeholder="例如 辣度"
+              value="{{optionForm.name}}"
+              data-field="name"
+              bindinput="onOptionFormInput"
+            />
+          </view>
+          <view class="form-field">
+            <label>添加可选项</label>
+            <view class="add-choice-row">
+              <input
+                placeholder="输入选项名称"
+                value="{{optionChoiceInput}}"
+                bindinput="onOptionChoiceInput"
+              />
+              <button class="pill-btn" size="mini" bindtap="onAddOptionChoice">添加</button>
+            </view>
+          </view>
+          <radio-group
+            class="choices-list"
+            bindchange="onOptionDefaultChoiceChange"
+            value="{{optionForm.defaultChoice}}"
+          >
+            <block wx:for="{{optionForm.choices}}" wx:key="value" wx:for-item="choice">
+              <view class="choice-item {{optionForm.defaultChoice === choice.value ? 'is-default' : ''}}">
+                <view
+                  class="choice-main"
+                  data-value="{{choice.value}}"
+                  bindtap="onSelectOptionDefaultChoice"
+                >
+                  <radio value="{{choice.value}}" checked="{{optionForm.defaultChoice === choice.value}}"></radio>
+                  <text class="choice-label">{{choice.label}}</text>
+                  <text class="default-tag" wx:if="{{optionForm.defaultChoice === choice.value}}">默认</text>
+                </view>
+                <button
+                  class="pill-btn"
+                  size="mini"
+                  data-value="{{choice.value}}"
+                  bindtap="onRemoveOptionChoice"
+                >移除</button>
+              </view>
+            </block>
+          </radio-group>
+          <view class="form-actions option-form-actions">
+            <button class="option-btn option-btn--primary" bindtap="onSaveOption">保存选项</button>
+            <button class="option-btn option-btn--secondary" bindtap="onStartCreateOption">重置</button>
+          </view>
+        </view>
+        <view class="option-list-card">
+          <view class="list-header">
+            <text class="list-title">现有选项</text>
+          </view>
+          <view class="options-list" wx:if="{{options.length}}">
+            <block wx:for="{{options}}" wx:key="id" wx:for-item="option">
+              <view class="option-card">
+                <view class="option-card-header">
+                  <text class="option-name">{{option.name}}</text>
+                </view>
+                <view class="option-card-body" wx:if="{{option.choices && option.choices.length}}">
+                  <block wx:for="{{option.choices}}" wx:key="value" wx:for-item="choice">
+                    <text class="choice-tag">{{choice.label}}</text>
+                  </block>
+                </view>
+                <view class="option-card-footer">
+                  <button class="pill-btn" size="mini" data-id="{{option.id}}" bindtap="onEditOption">编辑</button>
+                  <button class="pill-btn" size="mini" data-id="{{option.id}}" bindtap="onDeleteOption">删除</button>
+                </view>
+              </view>
+            </block>
+          </view>
+          <view class="empty" wx:else>暂未配置选项</view>
+        </view>
+      </view>
       <view class="form-actions bottom-actions">
         <button class="danger" bindtap="onDeleteMenu">删除菜单</button>
-        <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存配置</button>
+        <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存菜单</button>
       </view>
     </view>
   </scroll-view>

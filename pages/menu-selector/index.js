@@ -1,6 +1,12 @@
 import { createPage } from '../../utils/page';
 import { resolveThemeClass } from '../../utils/theme-helper';
-import { getCurrentUser, getMenusForCurrentUser, createMenu } from '../../services/api';
+import api, {
+  getCurrentUser,
+  updateCurrentUser,
+  getMenusForCurrentUser,
+  createMenu,
+  acceptMenuInvite,
+} from '../../services/api';
 
 const app = getApp();
 const store = app.getStore();
@@ -23,6 +29,16 @@ const ROLE_ENTRY_PAGES = {
   customer: '/pages/customer/menu/index',
 };
 
+const PROFILE_AVATAR_DIR = 'profile_avatar';
+
+const getAvatarFileExtension = (path = '') => {
+  const match = `${path}`.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
+  if (match && match[1]) {
+    return match[1].toLowerCase();
+  }
+  return 'png';
+};
+
 createPage({
   data: {
     loading: false,
@@ -31,12 +47,44 @@ createPage({
     selectedRole: '',
     roleLabels: ROLE_LABELS,
     user: null,
+    showProfileSetup: false,
+    profileNickname: '',
+    profileAvatar: '',
+    profileLoading: false,
+    avatarUploading: false,
   },
   mapStoreToData,
-  async onLoad() {
-    await this.loadData();
+  async onLoad(options = {}) {
+    const { menuId, role } = await this.handleInvite(options);
+    await this.loadData(menuId, role);
   },
   methods: {
+    async handleInvite(options = {}) {
+      const inviteToken = options.inviteToken || options.scene;
+      if (!inviteToken) {
+        return { menuId: options.menuId || '', role: options.role || '' };
+      }
+      const hintedMenuId = options.menuId || '';
+      wx.showLoading({ title: '加入中', mask: true });
+      try {
+        const result = await acceptMenuInvite({ token: inviteToken, menuId: hintedMenuId });
+        wx.hideLoading();
+        if (result && result.menuId) {
+          wx.showToast({ title: '已加入菜单', icon: 'success' });
+          const roles = Array.isArray(result.roles) ? result.roles : [];
+          return {
+            menuId: result.menuId,
+            role: roles[0] || options.role || 'customer',
+          };
+        }
+        return { menuId: hintedMenuId, role: options.role || '' };
+      } catch (error) {
+        wx.hideLoading();
+        console.error('接受邀请失败', error);
+        wx.showToast({ title: '邀请无效或已过期', icon: 'none' });
+        return { menuId: hintedMenuId, role: options.role || '' };
+      }
+    },
     async loadData(preferredMenuId = '', preferredRole = '') {
       this.setData({ loading: true });
       try {
@@ -69,6 +117,10 @@ createPage({
           menus,
           selectedMenuId: defaultMenu ? defaultMenu.id : '',
           selectedRole: defaultRole,
+          profileNickname: user?.nickname || '',
+          profileAvatar: user?.avatar || '',
+          showProfileSetup: !this.isProfileCompleted(user),
+          avatarUploading: false,
         });
         return menus;
       } catch (error) {
@@ -78,6 +130,36 @@ createPage({
       } finally {
         this.setData({ loading: false });
       }
+    },
+    isProfileCompleted(user = this.data.user) {
+      if (!user) {
+        return false;
+      }
+      if (typeof user.profileCompleted === 'boolean') {
+        return user.profileCompleted;
+      }
+      return Boolean(user.nickname && user.avatar);
+    },
+    onEditProfile() {
+      const { user } = this.data;
+      this.setData({
+        showProfileSetup: true,
+        profileNickname: user?.nickname || '',
+        profileAvatar: user?.avatar || '',
+      });
+    },
+    onCloseProfile() {
+      if (this.data.profileLoading) {
+        return;
+      }
+      this.setData({ showProfileSetup: false });
+    },
+    async onRefresh() {
+      if (this.data.loading) {
+        return;
+      }
+      const { selectedMenuId, selectedRole } = this.data;
+      await this.loadData(selectedMenuId, selectedRole);
     },
     async onCreateMenu() {
       if (this.data.loading) {
@@ -128,6 +210,11 @@ createPage({
     },
     onEnter() {
       const { selectedMenuId, selectedRole } = this.data;
+      if (!this.isProfileCompleted()) {
+        this.setData({ showProfileSetup: true });
+        wx.showToast({ title: '请先完善昵称和头像', icon: 'none' });
+        return;
+      }
       if (!selectedMenuId || !selectedRole) {
         wx.showToast({ title: '请选择菜单和身份', icon: 'none' });
         return;
@@ -150,5 +237,100 @@ createPage({
       }
       wx.redirectTo({ url: targetUrl });
     },
+    onProfileNicknameInput(event) {
+      this.setData({ profileNickname: event.detail.value || '' });
+    },
+    async onChooseAvatar(event) {
+      const avatarUrl = event?.detail?.avatarUrl;
+      if (!avatarUrl) {
+        wx.showToast({ title: '选择头像失败', icon: 'none' });
+        return;
+      }
+      if (!wx.cloud || typeof wx.cloud.uploadFile !== 'function') {
+        wx.showToast({ title: '云能力不可用', icon: 'none' });
+        return;
+      }
+      if (this.data.avatarUploading) {
+        return;
+      }
+      const userId = this.data.user?.id || store.getState().user?.id || 'anonymous';
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).slice(2, 8);
+      const fileExt = getAvatarFileExtension(avatarUrl);
+      const cloudPath = `${PROFILE_AVATAR_DIR}/${userId}-${timestamp}-${randomSuffix}.${fileExt}`;
+      this.setData({ avatarUploading: true });
+      wx.showLoading({ title: '上传中', mask: true });
+      try {
+        const uploadOptions = {
+          cloudPath,
+          filePath: avatarUrl,
+        };
+        const uploadResult = await wx.cloud.uploadFile(uploadOptions);
+        if (!uploadResult || !uploadResult.fileID) {
+          throw new Error('missing_file_id');
+        }
+        this.setData({ profileAvatar: uploadResult.fileID });
+        wx.showToast({ title: '头像已更新', icon: 'success' });
+      } catch (error) {
+        console.error('上传头像失败', error);
+        wx.showToast({ title: '上传失败', icon: 'none' });
+      } finally {
+        wx.hideLoading();
+        this.setData({ avatarUploading: false });
+      }
+    },
+    async onSubmitProfile() {
+      if (this.data.profileLoading) {
+        return;
+      }
+      const nickname = (this.data.profileNickname || '').trim();
+      const avatar = (this.data.profileAvatar || '').trim();
+      if (!nickname) {
+        wx.showToast({ title: '请填写昵称', icon: 'none' });
+        return;
+      }
+      if (!avatar) {
+        wx.showToast({ title: '请设置头像', icon: 'none' });
+        return;
+      }
+      this.setData({ profileLoading: true });
+      wx.showLoading({ title: '保存中', mask: true });
+      const updateUserFn =
+        typeof updateCurrentUser === 'function'
+          ? updateCurrentUser
+          : typeof api?.updateCurrentUser === 'function'
+            ? api.updateCurrentUser
+            : null;
+      if (!updateUserFn) {
+        console.error('更新用户资料失败: 缺少 updateCurrentUser 实现');
+        wx.showToast({ title: '保存失败', icon: 'none' });
+        this.setData({ profileLoading: false });
+        wx.hideLoading();
+        return;
+      }
+      try {
+        const updated = await updateUserFn({
+          nickname,
+          avatar,
+          profileCompleted: true,
+        });
+        store.setState({ user: updated });
+        this.setData({
+          user: updated,
+          showProfileSetup: false,
+          profileLoading: false,
+          profileNickname: updated?.nickname || nickname,
+          profileAvatar: updated?.avatar || avatar,
+        });
+        wx.showToast({ title: '已保存', icon: 'success' });
+      } catch (error) {
+        console.error('更新用户资料失败', error);
+        wx.showToast({ title: '保存失败', icon: 'none' });
+        this.setData({ profileLoading: false });
+      } finally {
+        wx.hideLoading();
+      }
+    },
+    noop() {},
   },
 });

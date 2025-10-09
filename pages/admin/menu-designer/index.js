@@ -4,7 +4,6 @@ import {
   getMenuDetail,
   getCategoriesByMenu,
   getDishesByMenu,
-  createCategory,
   sortCategories,
   upsertDish,
   sortDishes,
@@ -15,8 +14,6 @@ import { ADMIN_BOTTOM_TABS } from '../../../common/admin-tabs';
 const DEFAULT_CATEGORY_ITEM_HEIGHT = 88;
 
 const PAGE_TRANSITION_DURATION = 180;
-const DRAG_LONG_PRESS_THRESHOLD = 500;
-const DRAG_CANCEL_DISTANCE = 10;
 
 const ADMIN_TAB_URL_MAP = ADMIN_BOTTOM_TABS.reduce((acc, tab) => {
   acc[tab.key] = tab.url;
@@ -57,6 +54,10 @@ createPage({
       off: 0,
     },
     transitionClass: '',
+    heroImage: '',
+    heroTitle: '',
+    heroSubtitle: '',
+    editIcon: '/style/icons/edit.svg',
   },
   mapStoreToData,
   async onLoad() {
@@ -123,6 +124,10 @@ createPage({
           on: dishesRaw.filter((item) => item.status === 'on').length,
           off: dishesRaw.filter((item) => item.status !== 'on').length,
         };
+        const firstDishWithImage = dishesRaw.find((item) => item.image);
+        const heroImage = (menu && menu.coverImage) || (firstDishWithImage ? firstDishWithImage.image : '');
+        const heroTitle = menu && menu.name ? menu.name : '菜单展示';
+        const heroSubtitle = menu && menu.description ? menu.description : '管理分类与菜品，打造属于你的菜单';
         let activeCategoryId = preferredCategoryId;
         if (!activeCategoryId) {
           const previous = keepActive ? this.data.activeCategoryId : '';
@@ -131,14 +136,15 @@ createPage({
           } else if (menu.defaultCategoryId && categories.some((item) => item.id === menu.defaultCategoryId)) {
             activeCategoryId = menu.defaultCategoryId;
           } else {
-            activeCategoryId = categories[0]?.id || '';
+            activeCategoryId = categories[0] ? categories[0].id : '';
           }
         }
         const activeStatusFilter = this.data.activeStatusFilter || 'all';
         const activeDishes = activeCategoryId
           ? this.filterDishesByStatus(dishesByCategory[activeCategoryId] || [], activeStatusFilter)
           : [];
-        const currentCategoryName = categories.find((item) => item.id === activeCategoryId)?.name || '';
+        const activeCategory = categories.find((item) => item.id === activeCategoryId);
+        const currentCategoryName = activeCategory ? activeCategory.name : '';
         this.setData(
           {
             loading: false,
@@ -151,6 +157,9 @@ createPage({
             draggingId: '',
             draggingDishId: '',
             statusCounts,
+            heroImage,
+            heroTitle,
+            heroSubtitle,
           },
           () => {
             this.measureCategoryItemHeight();
@@ -228,63 +237,22 @@ createPage({
         activeDishes: list,
       });
     },
-    clearCategoryPressTimer() {
-      if (this.categoryPressTimer) {
-        clearTimeout(this.categoryPressTimer);
-        this.categoryPressTimer = null;
-      }
-    },
-    startCategoryDrag() {
-      const pending = this.pendingCategoryDrag;
-      if (!pending) {
+    onCategoryTouchStart(event) {
+      const { id, index, dragHandle } = event.currentTarget.dataset;
+      const touch = event.touches && event.touches[0];
+      if (!dragHandle || !id || touch == null) {
         return;
       }
       this.dragContext = {
-        id: pending.id,
-        currentIndex: pending.index,
-        lastY: pending.lastY,
+        id,
+        currentIndex: Number(index),
+        lastY: touch.clientY,
         moved: false,
       };
-      this.pendingCategoryDrag = null;
-      this.setData({ draggingId: pending.id });
-    },
-    onCategoryTouchStart(event) {
-      // Skip initiating drag when the touch starts on controls that opt out
-      const targetDataset = event?.target?.dataset || {};
-      if (targetDataset.stopDrag) {
-        return;
-      }
-      const { id, index } = event.currentTarget.dataset;
-      const touch = event.touches && event.touches[0];
-      if (!id || touch == null) {
-        return;
-      }
-      this.clearCategoryPressTimer();
-      this.pendingCategoryDrag = {
-        id,
-        index: Number(index),
-        startY: touch.clientY,
-        lastY: touch.clientY,
-      };
-      this.categoryPressTimer = setTimeout(() => {
-        this.categoryPressTimer = null;
-        this.startCategoryDrag();
-      }, DRAG_LONG_PRESS_THRESHOLD);
+      this.setData({ draggingId: id });
     },
     onCategoryTouchMove(event) {
       if (!this.dragContext) {
-        if (this.pendingCategoryDrag) {
-          const touch = event.touches && event.touches[0];
-          if (!touch) {
-            return;
-          }
-          const pending = this.pendingCategoryDrag;
-          pending.lastY = touch.clientY;
-          if (Math.abs(touch.clientY - pending.startY) > DRAG_CANCEL_DISTANCE) {
-            this.clearCategoryPressTimer();
-            this.pendingCategoryDrag = null;
-          }
-        }
         return;
       }
       const touch = event.touches && event.touches[0];
@@ -311,15 +279,8 @@ createPage({
       this.dragContext.moved = true;
       this.setData({ categories });
     },
-    async onCategoryTouchEnd(event) {
-      this.clearCategoryPressTimer();
-      const pending = this.pendingCategoryDrag;
-      this.pendingCategoryDrag = null;
+    async onCategoryTouchEnd() {
       if (!this.dragContext) {
-        const { id } = pending || event.currentTarget.dataset || {};
-        if (id && id !== this.data.activeCategoryId) {
-          this.setActiveCategory(id);
-        }
         return;
       }
       const moved = this.dragContext.moved;
@@ -345,64 +306,29 @@ createPage({
       if (!id || id === this.data.activeCategoryId) return;
       this.setActiveCategory(id);
     },
-    clearDishPressTimer() {
-      if (this.dishPressTimer) {
-        clearTimeout(this.dishPressTimer);
-        this.dishPressTimer = null;
-      }
-    },
-    startDishDrag() {
-      const pending = this.pendingDishDrag;
-      if (!pending) {
-        return;
-      }
-      this.dishDragContext = {
-        id: pending.id,
-        currentIndex: pending.index,
-        lastY: pending.lastY,
-        moved: false,
-      };
-      this.pendingDishDrag = null;
-      this.setData({ draggingDishId: pending.id });
-    },
     onDishTouchStart(event) {
-      const targetDataset = event?.target?.dataset || {};
-      if (event?.mark?.stopDrag || targetDataset.stopDrag) {
-        this.clearDishPressTimer();
-        this.pendingDishDrag = null;
+      if (!event) {
         return;
       }
-      const { id, index } = event.currentTarget.dataset;
+      const { id, index, dragHandle } = event.currentTarget.dataset;
+      if (!dragHandle || (event.mark && event.mark.stopDrag)) {
+        return;
+      }
       const touch = event.touches && event.touches[0];
       if (!id || touch == null) {
         return;
       }
-      this.clearDishPressTimer();
-      this.pendingDishDrag = {
+      this.dishDragContext = {
         id,
-        index: Number(index),
-        startY: touch.clientY,
+        currentIndex: Number(index),
         lastY: touch.clientY,
+        moved: false,
+        fromHandle: true,
       };
-      this.dishPressTimer = setTimeout(() => {
-        this.dishPressTimer = null;
-        this.startDishDrag();
-      }, DRAG_LONG_PRESS_THRESHOLD);
+      this.setData({ draggingDishId: id });
     },
     onDishTouchMove(event) {
-      if (!this.dishDragContext) {
-        if (this.pendingDishDrag) {
-          const touch = event.touches && event.touches[0];
-          if (!touch) {
-            return;
-          }
-          const pending = this.pendingDishDrag;
-          pending.lastY = touch.clientY;
-          if (Math.abs(touch.clientY - pending.startY) > DRAG_CANCEL_DISTANCE) {
-            this.clearDishPressTimer();
-            this.pendingDishDrag = null;
-          }
-        }
+      if (!this.dishDragContext || !this.dishDragContext.fromHandle) {
         return;
       }
       const touch = event.touches && event.touches[0];
@@ -433,9 +359,9 @@ createPage({
       this.setData({ activeDishes: list, dishesByCategory });
     },
     async onDishTouchEnd() {
-      this.clearDishPressTimer();
-      this.pendingDishDrag = null;
-      if (!this.dishDragContext) {
+      if (!this.dishDragContext || !this.dishDragContext.fromHandle) {
+        this.dishDragContext = null;
+        this.setData({ draggingDishId: '' });
         return;
       }
       const moved = this.dishDragContext.moved;
@@ -469,32 +395,10 @@ createPage({
         wx.redirectTo({ url: target });
       }
     },
-    async onAddCategory() {
-      wx.showModal({
-        title: '新增分类',
-        editable: true,
-        placeholderText: '输入分类名称',
-        success: async (res) => {
-          if (res.confirm) {
-            const name = (res.content || '').trim();
-            if (!name) return;
-            try {
-              const category = await createCategory({
-                menuId: store.getState().activeMenuId,
-                name,
-              });
-              wx.showToast({ title: '操作成功', icon: 'success' });
-              await this.loadData({ preferredCategoryId: category.id });
-            } catch (error) {
-              console.error('新增分类失败', error);
-              wx.showToast({ title: '操作失败', icon: 'none' });
-            }
-          }
-        },
-      });
-    },
     onEditDish(event) {
-      event.stopPropagation?.();
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
       const { id } = event.currentTarget.dataset;
       if (!id) {
         return;
@@ -502,13 +406,16 @@ createPage({
       wx.navigateTo({ url: `/pages/admin/dish-edit/index?id=${id}` });
     },
     onToggleDishStatus(event) {
-      event.stopPropagation?.();
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
       const { id, next } = event.currentTarget.dataset;
       if (!id || !next) {
         return;
       }
       this.changeDishStatus(id, next);
     },
+    noop() {},
     playEnterAnimation() {
       if (this.tabTransitionTimer) {
         clearTimeout(this.tabTransitionTimer);
@@ -532,6 +439,9 @@ createPage({
       }
       const list = dishesByCategory[activeCategoryId] || [];
       return list.find((item) => item.id === id) || null;
+    },
+    onBackToMenuSelector() {
+      wx.redirectTo({ url: '/pages/menu-selector/index' });
     },
     onAddDish() {
       const { activeCategoryId } = this.data;

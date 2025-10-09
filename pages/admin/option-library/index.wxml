@@ -2,7 +2,7 @@
   <scroll-view class="page-content" scroll-y enable-flex>
     <view class="page-inner with-tabbar {{transitionClass}}">
       <view class="top-bar">
-        <text class="page-title">自定义选项库</text>
+        <text class="page-title">自定义选项</text>
         <view class="top-actions">
           <button class="icon-btn" size="mini" bindtap="startCreate">新建选项</button>
         </view>
@@ -12,10 +12,6 @@
           <label>选项名称</label>
           <input value="{{form.name}}" data-field="name" bindinput="onFormInput" />
         </view>
-        <view class="form-field switch-row">
-          <label>是否必选</label>
-          <switch checked="{{form.required}}" bindchange="onToggleRequired"></switch>
-        </view>
         <view class="form-field">
           <label>添加可选项</label>
           <view class="add-choice-row">
@@ -23,20 +19,25 @@
             <button class="pill-btn" size="mini" bindtap="addChoice">添加</button>
           </view>
         </view>
-        <radio-group class="choices-list" bindchange="onDefaultChoiceChange">
+        <radio-group class="choices-list" bindchange="onDefaultChoiceChange" value="{{form.defaultChoice}}">
           <block wx:for="{{form.choices}}" wx:key="value" wx:for-item="choice">
-            <view class="choice-item">
-              <text class="choice-label">{{choice.label}}</text>
-              <view class="choice-actions">
+            <view class="choice-item {{form.defaultChoice === choice.value ? 'is-default' : ''}}">
+              <view
+                class="choice-main"
+                data-value="{{choice.value}}"
+                bindtap="onSelectDefaultChoice"
+              >
                 <radio value="{{choice.value}}" checked="{{form.defaultChoice === choice.value}}"></radio>
-                <button class="pill-btn" size="mini" data-value="{{choice.value}}" bindtap="removeChoice">移除</button>
+                <text class="choice-label">{{choice.label}}</text>
+                <text class="default-tag" wx:if="{{form.defaultChoice === choice.value}}">默认</text>
               </view>
+              <button class="pill-btn" size="mini" data-value="{{choice.value}}" bindtap="removeChoice">移除</button>
             </view>
           </block>
         </radio-group>
-        <view class="form-actions">
-          <button class="primary" bindtap="onSave">保存选项</button>
-          <button bindtap="startCreate">重置</button>
+        <view class="form-actions option-form-actions">
+          <button class="option-btn option-btn--primary" bindtap="onSave">保存选项</button>
+          <button class="option-btn option-btn--secondary" bindtap="startCreate">重置</button>
         </view>
       </view>
       <view class="card options-card">
@@ -48,7 +49,6 @@
             <view class="option-card">
               <view class="option-header">
                 <text class="option-name">{{option.name}}</text>
-                <text class="option-required" wx:if="{{option.required}}">必选</text>
               </view>
               <view class="option-body">
                 <block wx:for="{{option.choices}}" wx:key="value" wx:for-item="choice">

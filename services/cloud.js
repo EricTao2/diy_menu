@@ -29,6 +29,7 @@ export const bootstrapMockData = async () => {
 };
 export const createMenu = (payload) => callAdmin('createMenu', payload);
 export const getCurrentUser = () => callAdmin('getCurrentUser');
+export const updateCurrentUser = (updates) => callAdmin('updateCurrentUser', updates);
 export const getMenusForCurrentUser = () => callAdmin('getMenusForCurrentUser');
 export const getMenuDetail = (menuId) => callAdmin('getMenuDetail', { menuId });
 export const updateMenuSettings = (menuId, updates) =>
@@ -53,6 +54,13 @@ export const upsertDish = (dish) => callAdmin('upsertDish', { dish });
 export const deleteDish = (dishId) => callAdmin('deleteDish', { dishId });
 export const sortDishes = (menuId, categoryId, sortedIds) =>
   callAdmin('sortDishes', { menuId, categoryId, sortedIds });
+export const getMenuUsers = (menuId, params = {}) =>
+  callAdmin('getMenuUsers', { menuId, ...params });
+export const updateMenuUserRoles = (menuId, userId, roles) =>
+  callAdmin('updateMenuUserRoles', { menuId, userId, roles });
+export const createMenuInvite = (menuId, role = 'customer') =>
+  callAdmin('createMenuInvite', { menuId, role });
+export const acceptMenuInvite = (payload) => callAdmin('acceptMenuInvite', payload);
 
 // Placeholders for yet-to-be-migrated features retain mock behaviour.
 export const getCart = mockService.getCart;

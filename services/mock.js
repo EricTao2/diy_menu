@@ -3,8 +3,11 @@ const USER_KEY = 'diy-menu-current-user';
 
 const DEFAULT_USER = {
   id: 'user-001',
-  nickname: '测试用户',
-  avatar: 'https://dummyimage.com/100x100/1f6feb/ffffff&text=DIY',
+  nickname: '',
+  avatar: '',
+  profileCompleted: false,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
 };
 
 const DEFAULT_DATA = {
@@ -31,6 +34,7 @@ const DEFAULT_DATA = {
     { id: 'mr-001', menuId: 'menu-001', userId: 'user-001', roles: ['admin', 'chef', 'customer'] },
     { id: 'mr-002', menuId: 'menu-002', userId: 'user-001', roles: ['customer'] },
   ],
+  menuInvitations: [],
   categories: [
     { id: 'cat-001', menuId: 'menu-001', name: '热菜', sortOrder: 10 },
     { id: 'cat-002', menuId: 'menu-001', name: '凉菜', sortOrder: 20 },
@@ -42,7 +46,6 @@ const DEFAULT_DATA = {
       id: 'opt-001',
       menuId: 'menu-001',
       name: '辣度',
-      required: true,
       defaultChoice: 'mild',
       choices: [
         { label: '不辣', value: 'none', sortOrder: 10 },
@@ -55,7 +58,6 @@ const DEFAULT_DATA = {
       id: 'opt-002',
       menuId: 'menu-001',
       name: '份量',
-      required: false,
       defaultChoice: 'regular',
       choices: [
         { label: '小份', value: 'small', sortOrder: 10 },
@@ -67,7 +69,6 @@ const DEFAULT_DATA = {
       id: 'opt-101',
       menuId: 'menu-002',
       name: '蛋白偏好',
-      required: false,
       defaultChoice: null,
       choices: [
         { label: 'Bacon', value: 'bacon', sortOrder: 10 },
@@ -198,13 +199,124 @@ const saveDB = (db) => {
 const ensureUser = () => {
   const user = wx.getStorageSync(USER_KEY);
   if (user) {
+    if (typeof user.profileCompleted === 'undefined') {
+      const profileCompleted = Boolean(user.nickname && user.avatar);
+      const patched = {
+        ...user,
+        profileCompleted,
+        updatedAt: user.updatedAt || Date.now(),
+      };
+      wx.setStorageSync(USER_KEY, patched);
+      return patched;
+    }
     return user;
   }
-  wx.setStorageSync(USER_KEY, DEFAULT_USER);
-  return DEFAULT_USER;
+  const now = Date.now();
+  const freshUser = {
+    ...DEFAULT_USER,
+    profileCompleted: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+  wx.setStorageSync(USER_KEY, freshUser);
+  return freshUser;
 };
 
 const generateId = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+
+const ROLE_PRIORITY = {
+  admin: 1,
+  chef: 2,
+  customer: 3,
+};
+
+const ROLE_LABELS = {
+  admin: '管理员',
+  chef: '厨师',
+  customer: '顾客',
+};
+
+const ALLOWED_ROLES = Object.keys(ROLE_PRIORITY);
+
+const INVITE_TTL = 7 * 24 * 60 * 60 * 1000;
+
+const normalizeRoles = (roles = []) => {
+  const unique = [];
+  roles.forEach((role) => {
+    if (!role || !ALLOWED_ROLES.includes(role)) {
+      return;
+    }
+    if (!unique.includes(role)) {
+      unique.push(role);
+    }
+  });
+  unique.sort((a, b) => (ROLE_PRIORITY[a] || 99) - (ROLE_PRIORITY[b] || 99));
+  return unique;
+};
+
+const ensureArrayStore = (db, key) => {
+  if (!Array.isArray(db[key])) {
+    db[key] = [];
+  }
+};
+
+const ensureUserRecord = (db, user) => {
+  if (!user) return;
+  ensureArrayStore(db, 'users');
+  const exists = db.users.some((item) => item.id === user.id);
+  const now = Date.now();
+  const normalizedNickname = user.nickname || '未命名用户';
+  if (!exists) {
+    db.users.push({
+      id: user.id,
+      nickname: normalizedNickname,
+      avatar: user.avatar || '',
+      profileCompleted: Boolean(user.profileCompleted),
+      createdAt: user.createdAt || now,
+      updatedAt: user.updatedAt || now,
+    });
+    return;
+  }
+  db.users = db.users.map((item) =>
+    item.id === user.id
+      ? {
+          ...item,
+          nickname: normalizedNickname,
+          avatar: user.avatar || '',
+          profileCompleted: Boolean(user.profileCompleted),
+          updatedAt: user.updatedAt || now,
+        }
+      : item,
+  );
+};
+
+const sanitizeOptionPayload = (option = {}) => {
+  const rawChoices = Array.isArray(option.choices) ? option.choices : [];
+  const seen = new Set();
+  const choices = [];
+  rawChoices.forEach((choice, index) => {
+    if (!choice) {
+      return;
+    }
+    const label = `${choice.label || ''}`.trim();
+    if (!label) {
+      return;
+    }
+    const value = `${choice.value || ''}`.trim() || label;
+    if (seen.has(value)) {
+      return;
+    }
+    seen.add(value);
+    const sortOrder = typeof choice.sortOrder === 'number' ? choice.sortOrder : Date.now() + index;
+    choices.push({ label, value, sortOrder });
+  });
+  choices.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  let defaultChoice = option.defaultChoice;
+  if (!defaultChoice || !choices.some((item) => item.value === defaultChoice)) {
+    defaultChoice = choices[0] ? choices[0].value : null;
+  }
+  return { choices, defaultChoice };
+};
 
 export const bootstrapMockData = async () => {
   ensureUser();
@@ -214,6 +326,34 @@ export const bootstrapMockData = async () => {
 
 export const getCurrentUser = async () => {
   return delay(ensureUser());
+};
+
+export const updateCurrentUser = async (updates = {}) => {
+  const current = ensureUser();
+  const now = Date.now();
+  const next = {
+    ...current,
+  };
+  if (typeof updates.nickname === 'string') {
+    next.nickname = updates.nickname.trim();
+  }
+  if (typeof updates.avatar === 'string') {
+    next.avatar = updates.avatar.trim();
+  }
+  if (typeof updates.profileCompleted === 'boolean') {
+    next.profileCompleted = updates.profileCompleted;
+  }
+  next.updatedAt = now;
+  if (typeof next.profileCompleted === 'undefined') {
+    next.profileCompleted = Boolean(next.nickname && next.avatar);
+  }
+  wx.setStorageSync(USER_KEY, next);
+
+  const db = loadDB();
+  ensureUserRecord(db, next);
+  saveDB(db);
+
+  return delay({ ...next });
 };
 
 export const getMenusForCurrentUser = async () => {
@@ -230,6 +370,192 @@ export const getMenusForCurrentUser = async () => {
       : null;
   });
   return delay(menus.filter(Boolean));
+};
+
+export const getMenuUsers = async (menuId, { page = 1, pageSize = 20 } = {}) => {
+  const db = loadDB();
+  ensureArrayStore(db, 'menuRoles');
+  ensureArrayStore(db, 'users');
+  const menu = db.menus.find((item) => item.id === menuId);
+  if (!menu) {
+    throw new Error('menu_not_found');
+  }
+  const safePage = Math.max(parseInt(page, 10) || 1, 1);
+  const safePageSize = Math.max(parseInt(pageSize, 10) || 20, 1);
+  const records = db.menuRoles
+    .filter((item) => item.menuId === menuId)
+    .map((entry) => {
+      const user = db.users.find((u) => u.id === entry.userId) || {};
+      const roles = normalizeRoles(entry.roles || []);
+      const primaryRole = roles[0] || 'customer';
+      return {
+        userId: entry.userId,
+        nickname: user.nickname || '未命名用户',
+        avatar: user.avatar || '',
+        roles,
+        roleLabels: roles.map((role) => ({ role, label: ROLE_LABELS[role] || role })),
+        primaryRole,
+        createdAt: entry.createdAt || 0,
+        updatedAt: entry.updatedAt || entry.createdAt || 0,
+      };
+    })
+    .sort((a, b) => {
+      const roleDiff = (ROLE_PRIORITY[a.primaryRole] || 99) - (ROLE_PRIORITY[b.primaryRole] || 99);
+      if (roleDiff !== 0) {
+        return roleDiff;
+      }
+      const nameA = `${a.nickname || ''}`;
+      const nameB = `${b.nickname || ''}`;
+      return nameA.localeCompare(nameB);
+    });
+
+  const total = records.length;
+  const start = (safePage - 1) * safePageSize;
+  const end = start + safePageSize;
+  const items = records.slice(start, end);
+  return delay({
+    items,
+    total,
+    page: safePage,
+    pageSize: safePageSize,
+    hasMore: end < total,
+  });
+};
+
+export const updateMenuUserRoles = async (menuId, userId, roles = []) => {
+  const db = loadDB();
+  ensureArrayStore(db, 'menuRoles');
+  ensureArrayStore(db, 'users');
+  const menu = db.menus.find((item) => item.id === menuId);
+  if (!menu) {
+    throw new Error('menu_not_found');
+  }
+  if (!userId) {
+    throw new Error('user_required');
+  }
+  const normalizedRoles = normalizeRoles(Array.isArray(roles) ? roles : []);
+  const now = Date.now();
+  const index = db.menuRoles.findIndex((item) => item.menuId === menuId && item.userId === userId);
+  let entry = null;
+  if (!normalizedRoles.length) {
+    if (index !== -1) {
+      entry = db.menuRoles[index];
+      db.menuRoles.splice(index, 1);
+    }
+    saveDB(db);
+    return delay({ menuId, userId, roles: [] });
+  }
+  if (index === -1) {
+    entry = {
+      id: generateId('mr'),
+      menuId,
+      userId,
+      roles: normalizedRoles,
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.menuRoles.push(entry);
+  } else {
+    entry = {
+      ...db.menuRoles[index],
+      roles: normalizedRoles,
+      updatedAt: now,
+    };
+    db.menuRoles[index] = entry;
+  }
+  const user = db.users.find((item) => item.id === userId);
+  ensureUserRecord(db, user || { id: userId });
+  saveDB(db);
+  return delay({
+    menuId,
+    userId,
+    roles: normalizedRoles,
+  });
+};
+
+export const createMenuInvite = async (menuId, role = 'customer') => {
+  const db = loadDB();
+  ensureArrayStore(db, 'menuInvitations');
+  const menu = db.menus.find((item) => item.id === menuId);
+  if (!menu) {
+    throw new Error('menu_not_found');
+  }
+  const user = ensureUser();
+  const now = Date.now();
+  const inviteRole = ALLOWED_ROLES.includes(role) ? role : 'customer';
+  const token = generateId('invite');
+  const invitation = {
+    id: token,
+    token,
+    menuId,
+    role: inviteRole,
+    createdBy: user.id,
+    createdAt: now,
+    expiresAt: now + INVITE_TTL,
+  };
+  db.menuInvitations.push(invitation);
+  ensureUserRecord(db, user);
+  saveDB(db);
+  return delay({
+    token,
+    menuId,
+    role: inviteRole,
+    menuName: menu.name,
+    expiresAt: invitation.expiresAt,
+    path: `/pages/menu-selector/index?menuId=${menuId}&inviteToken=${token}`,
+  });
+};
+
+export const acceptMenuInvite = async ({ token, menuId: hintedMenuId }) => {
+  if (!token) {
+    throw new Error('invalid_invite');
+  }
+  const db = loadDB();
+  ensureArrayStore(db, 'menuInvitations');
+  ensureArrayStore(db, 'menuRoles');
+  const invitation = db.menuInvitations.find((item) => item.token === token);
+  if (!invitation) {
+    throw new Error('invalid_invite');
+  }
+  if (hintedMenuId && invitation.menuId !== hintedMenuId) {
+    throw new Error('invite_mismatch');
+  }
+  if (invitation.expiresAt && invitation.expiresAt < Date.now()) {
+    throw new Error('invite_expired');
+  }
+  const menu = db.menus.find((item) => item.id === invitation.menuId);
+  if (!menu) {
+    throw new Error('menu_not_found');
+  }
+  const user = ensureUser();
+  ensureUserRecord(db, user);
+  const now = Date.now();
+  let entry = db.menuRoles.find((item) => item.menuId === invitation.menuId && item.userId === user.id);
+  const roleToGrant = ALLOWED_ROLES.includes(invitation.role) ? invitation.role : 'customer';
+  let updatedRoles;
+  if (entry) {
+    const merged = new Set([...(entry.roles || []), roleToGrant]);
+    updatedRoles = normalizeRoles(Array.from(merged));
+    entry.roles = updatedRoles;
+    entry.updatedAt = now;
+  } else {
+    updatedRoles = normalizeRoles([roleToGrant]);
+    entry = {
+      id: generateId('mr'),
+      menuId: invitation.menuId,
+      userId: user.id,
+      roles: updatedRoles,
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.menuRoles.push(entry);
+  }
+  saveDB(db);
+  return delay({
+    menuId: invitation.menuId,
+    roles: updatedRoles,
+    menu,
+  });
 };
 
 export const getMenuDetail = async (menuId) => {
@@ -374,21 +700,62 @@ export const getOptionsByMenu = async (menuId) => {
   const db = loadDB();
   const options = db.options
     .filter((item) => item.menuId === menuId)
+    .map((item) => {
+      const rest = { ...item };
+      if (Object.prototype.hasOwnProperty.call(rest, 'required')) {
+        delete rest.required;
+      }
+      return rest;
+    })
     .sort((a, b) => a.name.localeCompare(b.name));
   return delay(options);
 };
 
 export const upsertOption = async (option) => {
   const db = loadDB();
+  const now = Date.now();
+  const { choices, defaultChoice } = sanitizeOptionPayload(option);
   if (option.id) {
-    db.options = db.options.map((item) => (item.id === option.id ? { ...item, ...option, updatedAt: Date.now() } : item));
-  } else {
-    option.id = generateId('opt');
-    option.createdAt = Date.now();
-    db.options.push(option);
+    let updatedOption = null;
+    db.options = db.options.map((item) => {
+      if (item.id !== option.id) {
+        return item;
+      }
+      const restOption = { ...(option || {}) };
+      if (Object.prototype.hasOwnProperty.call(restOption, 'required')) {
+        delete restOption.required;
+      }
+      updatedOption = {
+        ...item,
+        ...restOption,
+        choices,
+        defaultChoice,
+        updatedAt: now,
+      };
+      if (Object.prototype.hasOwnProperty.call(updatedOption, 'required')) {
+        delete updatedOption.required;
+      }
+      return updatedOption;
+    });
+    saveDB(db);
+    return delay(updatedOption || option);
   }
+  const restOption = { ...(option || {}) };
+  if (Object.prototype.hasOwnProperty.call(restOption, 'required')) {
+    delete restOption.required;
+  }
+  const newOption = {
+    id: generateId('opt'),
+    menuId: restOption.menuId,
+    name: restOption.name,
+    choices,
+    defaultChoice,
+    createdAt: now,
+    updatedAt: now,
+  };
+  db.options.push(newOption);
   saveDB(db);
-  return delay(option);
+  return delay(newOption);
 };
 
 export const deleteOption = async (optionId) => {

@@ -1,36 +1,114 @@
 <view class="page {{themeClass}}">
-  <view class="container">
-    <view class="section-title">选择菜单</view>
-    <view class="subtitle">请选择需要操作的菜单和身份</view>
-    <view class="actions">
-      <button class="secondary create-button" bindtap="onCreateMenu">新建菜单</button>
+  <view class="page-header">
+    <view class="header-content">
+      <view class="user-section">
+        <image
+          class="user-avatar"
+          mode="aspectFill"
+          src="{{user && user.avatar ? user.avatar : 'https://dummyimage.com/160x160/e5e7eb/9ca3af&text=U'}}"
+        ></image>
+        <view class="user-info">
+          <text class="user-nickname">{{user && user.nickname ? user.nickname : '未命名用户'}}</text>
+          <text class="user-subtitle">欢迎使用 DIY 菜单</text>
+        </view>
+        <button class="user-edit" bindtap="onEditProfile">编辑</button>
+      </view>
     </view>
-    <view wx:if="{{loading}}" class="loading">加载中...</view>
-    <view wx:if="{{menus.length}}">
-      <block wx:for="{{menus}}" wx:key="id" wx:for-item="menu">
-        <view
-          class="menu-card {{menu.id === selectedMenuId ? 'active' : ''}}"
-          data-menu-id="{{menu.id}}"
-          bindtap="onSelectMenu"
-        >
-          <view class="menu-header">
-            <text class="menu-name">{{menu.name}}</text>
-            <text class="menu-desc">{{menu.description}}</text>
+  </view>
+  <view class="page-body">
+    <view class="section-card">
+      <view class="section-heading">
+        <view class="section-title">选择菜单</view>
+        <view class="section-subtitle">请选择需要操作的菜单和身份</view>
+      </view>
+      <view class="section-actions">
+        <button class="secondary create-button" bindtap="onCreateMenu">新建菜单</button>
+        <button class="secondary refresh" bindtap="onRefresh">刷新</button>
+      </view>
+      <view wx:if="{{loading}}" class="loading">加载中...</view>
+      <view wx:if="{{menus.length}}" class="menu-list">
+        <block wx:for="{{menus}}" wx:key="id" wx:for-item="menu">
+          <view
+            class="menu-card {{menu.id === selectedMenuId ? 'active' : ''}}"
+            data-menu-id="{{menu.id}}"
+            bindtap="onSelectMenu"
+          >
+            <view class="menu-header">
+              <text class="menu-name">{{menu.name}}</text>
+              <text class="menu-desc">{{menu.description}}</text>
+            </view>
+            <view class="menu-roles">
+              <text class="menu-roles-label">已授权角色</text>
+              <role-switcher
+                data-menu-id="{{menu.id}}"
+                roles="{{menu.roles}}"
+                active-role="{{menu.id === selectedMenuId ? selectedRole : ''}}"
+                role-labels="{{roleLabels}}"
+                bind:switch="onSwitchRole"
+              ></role-switcher>
+            </view>
           </view>
-          <view class="menu-roles">
-            <text class="menu-roles-label">已授权角色</text>
-            <role-switcher
-              data-menu-id="{{menu.id}}"
-              roles="{{menu.roles}}"
-              active-role="{{menu.id === selectedMenuId ? selectedRole : ''}}"
-              role-labels="{{roleLabels}}"
-              bind:switch="onSwitchRole"
-            ></role-switcher>
+        </block>
+        <button class="primary enter" bindtap="onEnter">进入</button>
+      </view>
+      <view wx:else class="empty">你还没有任何菜单，点击上方“新建菜单”即可创建</view>
+    </view>
+  </view>
+  <view
+    wx:if="{{showProfileSetup}}"
+    class="profile-modal-backdrop"
+    catchtouchmove="noop"
+  >
+    <view class="profile-modal" catchtap="noop">
+      <view class="profile-modal__close" bindtap="onCloseProfile">
+        <view class="profile-modal__close-line"></view>
+        <view class="profile-modal__close-line"></view>
+      </view>
+      <view class="profile-modal__card">
+        <view class="profile-modal__hero">
+          <view class="profile-modal__hero-text">
+            <view class="profile-modal__tag">个人资料</view>
+            <view class="profile-modal__title">完善个人资料</view>
+            <view class="profile-modal__subtitle">首次使用前请设置头像和昵称</view>
+          </view>
+          <view class="profile-modal__hero-avatar">
+            <image
+              class="profile-modal__avatar"
+              mode="aspectFill"
+              src="{{profileAvatar || 'https://dummyimage.com/160x160/e5e7eb/9ca3af&text=U'}}"
+            ></image>
+            <button
+              class="profile-modal__avatar-btn"
+              open-type="chooseAvatar"
+              bindchooseavatar="onChooseAvatar"
+              loading="{{avatarUploading}}"
+              disabled="{{avatarUploading}}"
+            >{{avatarUploading ? '上传中...' : '更换头像'}}</button>
           </view>
         </view>
-      </block>
-      <button class="primary enter" bindtap="onEnter">进入</button>
+        <view class="profile-modal__body">
+          <view class="profile-modal__field">
+            <text class="profile-modal__label">昵称</text>
+            <input
+              type="nickname"
+              class="weui-input profile-modal__input"
+              maxlength="20"
+              value="{{profileNickname}}"
+              placeholder="请输入昵称"
+              bindinput="onProfileNicknameInput"
+            />
+          </view>
+          <view class="profile-modal__hint">昵称用于在应用中展示，建议使用便于识别的称呼</view>
+        </view>
+        <view class="profile-modal__actions">
+          <button
+            class="profile-modal__save-btn"
+            type="primary"
+            loading="{{profileLoading}}"
+            bindtap="onSubmitProfile"
+          >保存</button>
+        </view>
+      </view>
     </view>
-    <view wx:else class="empty">你还没有任何菜单，点击上方“新建菜单”即可创建</view>
   </view>
 </view>

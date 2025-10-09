@@ -1,3 +1,7 @@
+import { cloudbaseConfig } from '../config/index';
+
+const { envId: CLOUD_ENV_ID } = cloudbaseConfig;
+
 export const initCloud = () => {
   if (!wx.cloud) {
     console.warn('当前基础库不支持云开发能力');
@@ -7,9 +11,13 @@ export const initCloud = () => {
     return;
   }
   try {
-    wx.cloud.init({
+    const initOptions = {
       traceUser: true,
-    });
+    };
+    if (CLOUD_ENV_ID) {
+      initOptions.env = CLOUD_ENV_ID;
+    }
+    wx.cloud.init(initOptions);
     initCloud.initialized = true;
   } catch (error) {
     console.error('云开发初始化失败', error);

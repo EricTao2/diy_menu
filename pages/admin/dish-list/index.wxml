@@ -1,30 +1,58 @@
 <view class="page {{themeClass}}">
-  <view class="container">
-    <view class="header-row">
-      <view class="section-title">菜品管理</view>
-      <button class="primary" size="mini" bindtap="onAddDish">新建菜品</button>
-    </view>
-    <picker mode="selector" range="{{categoryPickerRange}}" bindchange="onCategoryPickerChange">
-      <view class="picker">{{selectedCategoryName}}</view>
-    </picker>
-    <block wx:for="{{filteredDishes}}" wx:key="id" wx:for-item="dish">
-      <view class="dish-card">
-        <view class="dish-info">
-          <text class="dish-name">{{dish.name}}</text>
-          <text class="dish-price">{{dish.priceText}}</text>
-        </view>
-        <view class="dish-meta">
-          <text>{{dish.categoryName}}</text>
-          <text>{{dish.status === 'on' ? '上架' : '下架'}}</text>
-        </view>
-        <view class="dish-actions">
-          <button size="mini" data-id="{{dish.id}}" bindtap="onToggleStatus">{{dish.status === 'on' ? '下架' : '上架'}}</button>
-          <button size="mini" data-id="{{dish.id}}" data-direction="up" bindtap="onMove">↑</button>
-          <button size="mini" data-id="{{dish.id}}" data-direction="down" bindtap="onMove">↓</button>
-          <button size="mini" data-id="{{dish.id}}" bindtap="onEditDish">编辑</button>
-          <button size="mini" data-id="{{dish.id}}" bindtap="onDeleteDish">删除</button>
+  <scroll-view class="page-content" scroll-y enable-flex>
+    <view class="page-inner {{transitionClass}}">
+      <view class="top-bar">
+        <text class="page-title">菜品管理</text>
+        <view class="top-actions">
+          <button class="icon-btn primary" size="mini" bindtap="onAddDish">新建菜品</button>
         </view>
       </view>
-    </block>
-  </view>
+
+      <view class="card filter-card">
+        <view class="section-header">
+          <text class="section-title">筛选分类</text>
+          <text class="section-desc">选择分类以查看对应菜品</text>
+        </view>
+        <picker mode="selector" range="{{categoryPickerRange}}" bindchange="onCategoryPickerChange">
+          <view class="filter-picker">
+            <text class="filter-value">{{selectedCategoryName}}</text>
+            <text class="filter-hint">点击切换</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="card dish-list-card">
+        <view class="section-header">
+          <text class="section-title">菜品列表</text>
+          <text class="section-desc">共 {{filteredDishes.length}} 个菜品</text>
+        </view>
+        <block wx:if="{{filteredDishes.length}}">
+          <block wx:for="{{filteredDishes}}" wx:key="id" wx:for-item="dish" wx:for-index="index">
+            <view class="dish-row">
+              <view class="dish-main">
+                <view class="dish-title">
+                  <text class="dish-name">{{dish.name}}</text>
+                  <text class="dish-price">{{dish.priceText}}</text>
+                </view>
+                <view class="dish-meta">
+                  <text class="dish-category">{{dish.categoryName || '未分类'}}</text>
+                  <text class="dish-status {{dish.status === 'on' ? 'status-on' : 'status-off'}}">{{dish.status === 'on' ? '上架' : '下架'}}</text>
+                </view>
+              </view>
+              <view class="dish-actions">
+                <button class="pill-btn ghost" size="mini" data-id="{{dish.id}}" bindtap="onToggleStatus">{{dish.status === 'on' ? '下架' : '上架'}}</button>
+                <button class="pill-btn ghost" size="mini" data-id="{{dish.id}}" data-direction="up" bindtap="onMove">上移</button>
+                <button class="pill-btn ghost" size="mini" data-id="{{dish.id}}" data-direction="down" bindtap="onMove">下移</button>
+                <button class="pill-btn ghost" size="mini" data-id="{{dish.id}}" bindtap="onEditDish">编辑</button>
+                <button class="pill-btn ghost" size="mini" data-id="{{dish.id}}" bindtap="onDeleteDish">删除</button>
+              </view>
+            </view>
+          </block>
+        </block>
+        <block wx:else>
+          <view class="empty">暂无菜品</view>
+        </block>
+      </view>
+    </view>
+  </scroll-view>
 </view>
