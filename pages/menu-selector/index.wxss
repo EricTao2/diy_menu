@@ -38,12 +38,12 @@
 .section-card {
   background: rgba(255, 255, 255, 0.92);
   border-radius: 32rpx;
-  padding: 40rpx 36rpx 48rpx;
+  padding: 20rpx 36rpx 48rpx;
   box-shadow: 0 16rpx 36rpx rgba(15, 23, 42, 0.06);
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 3px solid rgba(148, 163, 184, 0.18);
   display: flex;
   flex-direction: column;
-  gap: 32rpx;
+  gap: 12rpx;
   flex: 1;
   min-height: 0;
 }
@@ -225,6 +225,7 @@
   flex-direction: column;
   justify-content: space-between;
   min-height: 190rpx;
+  z-index: 0;
 }
 
 .menu-card::after {
@@ -240,6 +241,7 @@
   border-color: rgba(59, 130, 246, 0.5);
   box-shadow: 0 20rpx 42rpx rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.65);
   transform: translateY(-6rpx);
+  z-index: 2;
 }
 
 .menu-header {

@@ -610,14 +610,28 @@ const handlers = {
       expiresAt,
       lastUsedAt: null,
     };
-    await db.collection(COLLECTIONS.MENU_INVITATIONS).doc(token).set({ data: doc });
+    try {
+      await db.collection(COLLECTIONS.MENU_INVITATIONS).doc(token).set({ data: doc });
+    } catch (error) {
+      const collectionMissing =
+        error?.errCode === -502005 || error?.errCode === 'DATABASE_COLLECTION_NOT_EXIST';
+      if (collectionMissing) {
+        await db.createCollection(COLLECTIONS.MENU_INVITATIONS);
+        await db.collection(COLLECTIONS.MENU_INVITATIONS).doc(token).set({ data: doc });
+      } else {
+        throw error;
+      }
+    }
+    const basePath = '/pages/menu-selector/index';
+    const query = `menuId=${menuId}&inviteToken=${token}`;
+    const fullPath = `${basePath}?${query}`;
     return {
       token,
       menuId,
       role: inviteRole,
       menuName: menu.name,
       expiresAt,
-      path: `/pages/menu-selector/index?menuId=${menuId}&inviteToken=${token}`,
+      path: fullPath,
     };
   },
 

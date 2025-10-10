@@ -13,7 +13,24 @@
   gap: 16rpx;
 }
 
+.share-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16rpx;
+}
+
+.share-card__header .icon-btn {
+  height: 72rpx;
+  line-height: 72rpx;
+  min-width: 180rpx;
+  margin-left: auto;
+  font-size: 30rpx;
+}
+
 .share-title {
+  flex: 1;
+  min-width: 0;
   font-size: 30rpx;
   font-weight: 600;
 }
@@ -22,40 +39,6 @@
   font-size: 24rpx;
   color: var(--subtext-color);
   line-height: 1.5;
-}
-
-.share-result {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  background: rgba(15, 23, 42, 0.04);
-  border-radius: 12rpx;
-  padding: 16rpx;
-}
-
-.share-link {
-  flex: 1;
-  font-size: 24rpx;
-  color: var(--primary-color);
-  word-break: break-all;
-}
-
-.copy-btn {
-  border-radius: 999rpx;
-  padding: 0 28rpx;
-  line-height: 56rpx;
-  font-size: 24rpx;
-  background: var(--primary-color);
-  color: #fff;
-}
-
-.copy-btn::after {
-  border: none;
-}
-
-.share-expiry {
-  font-size: 22rpx;
-  color: var(--subtext-color);
 }
 
 .card-header {

@@ -9,26 +9,20 @@
     <view class="page-inner with-tabbar {{transitionClass}}">
       <view class="top-bar">
         <text class="page-title">用户管理</text>
-        <view class="top-actions">
-          <button
-            class="icon-btn primary"
-            size="mini"
-            loading="{{generatingShare}}"
-            bindtap="onGenerateShareLink"
-          >生成分享链接</button>
-        </view>
       </view>
 
       <view class="card share-card">
-        <view class="share-title">链接分享</view>
+        <view class="share-card__header">
+          <view class="share-title">链接分享</view>
+          <button
+            class="icon-btn primary"
+            size="mini"
+            open-type="share"
+          >生成分享链接</button>
+        </view>
         <view class="share-desc">
           生成小程序分享链接后发送给其他用户，对方打开后将自动加入该菜单并获得顾客身份。
         </view>
-        <view class="share-result" wx:if="{{shareLink}}">
-          <text class="share-link" selectable="true">{{shareLink}}</text>
-          <button class="copy-btn" size="mini" bindtap="onCopyShareLink">复制</button>
-        </view>
-        <view class="share-expiry" wx:if="{{shareExpiryText}}">有效期至 {{shareExpiryText}}</view>
       </view>
 
       <view class="card">

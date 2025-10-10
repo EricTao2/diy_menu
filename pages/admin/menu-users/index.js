@@ -8,7 +8,6 @@ import {
 } from '../../../services/api';
 import { ensureRole } from '../../../utils/auth';
 import { ADMIN_BOTTOM_TABS } from '../../../common/admin-tabs';
-import { formatDateTime } from '../../../utils/format';
 
 const app = getApp();
 const store = app.getStore();
@@ -56,9 +55,7 @@ createPage({
     loading: false,
     loadingMore: false,
     hasMore: false,
-    shareLink: '',
-    shareExpiryText: '',
-    generatingShare: false,
+    sharePath: '',
     transitionClass: '',
     _shareExpiresAt: 0,
     _shareMenuName: '',
@@ -155,57 +152,21 @@ createPage({
       if (!state.activeMenuId) {
         return null;
       }
-      if (!force && this.data.shareLink) {
+      if (!force && this.data.sharePath) {
         return {
-          path: this.data.shareLink,
+          path: this.data.sharePath,
           expiresAt: this.data._shareExpiresAt,
           menuName: this.data._shareMenuName,
         };
       }
       const invite = await createMenuInvite(state.activeMenuId, 'customer');
-      const expiryText = invite.expiresAt ? formatDateTime(invite.expiresAt) : '';
+      const sharePath = invite.path || '';
       this.setData({
-        shareLink: invite.path,
-        shareExpiryText: expiryText,
+        sharePath,
         _shareExpiresAt: invite.expiresAt || 0,
         _shareMenuName: invite.menuName || '',
       });
       return invite;
-    },
-    async onGenerateShareLink() {
-      if (this.data.generatingShare) {
-        return;
-      }
-      this.setData({ generatingShare: true });
-      try {
-        const invite = await this.createInviteLink({ force: true });
-        if (!invite) {
-          return;
-        }
-        wx.setClipboardData({
-          data: invite.path,
-          success: () => {
-            wx.showToast({ title: '链接已复制', icon: 'success' });
-          },
-          fail: () => {
-            wx.showToast({ title: '生成成功', icon: 'success' });
-          },
-        });
-      } catch (error) {
-        console.error('生成分享链接失败', error);
-        wx.showToast({ title: '生成失败', icon: 'none' });
-      } finally {
-        this.setData({ generatingShare: false });
-      }
-    },
-    onCopyShareLink() {
-      if (!this.data.shareLink) {
-        return;
-      }
-      wx.setClipboardData({
-        data: this.data.shareLink,
-        success: () => wx.showToast({ title: '已复制', icon: 'success' }),
-      });
     },
     async onEditUser(event) {
       const { userId } = event.currentTarget.dataset;
@@ -330,7 +291,7 @@ createPage({
         path: '/pages/menu-selector/index',
       };
     }
-    return this.createInviteLink({ force: false })
+    return this.createInviteLink({ force: true })
       .then((invite) => {
         const fallbackPath = `/pages/menu-selector/index?menuId=${state.activeMenuId}`;
         if (!invite) {

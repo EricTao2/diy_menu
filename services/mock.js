@@ -496,13 +496,16 @@ export const createMenuInvite = async (menuId, role = 'customer') => {
   db.menuInvitations.push(invitation);
   ensureUserRecord(db, user);
   saveDB(db);
+  const basePath = '/pages/menu-selector/index';
+  const query = `menuId=${menuId}&inviteToken=${token}`;
+  const fullPath = `${basePath}?${query}`;
   return delay({
     token,
     menuId,
     role: inviteRole,
     menuName: menu.name,
     expiresAt: invitation.expiresAt,
-    path: `/pages/menu-selector/index?menuId=${menuId}&inviteToken=${token}`,
+    path: fullPath,
   });
 };
 
