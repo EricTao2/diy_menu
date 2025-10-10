@@ -2,9 +2,13 @@
 
 .page {
   min-height: 100vh;
+  height: 100vh;
   background: linear-gradient(180deg, rgba(241, 245, 249, 0.8) 0%, rgba(255, 255, 255, 0.9) 35%, #ffffff 100%);
-  padding: 32rpx 32rpx 96rpx;
+  padding: 32rpx;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .page-header {
@@ -24,6 +28,11 @@
 
 .page-body {
   margin-top: 40rpx;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .section-card {
@@ -35,6 +44,8 @@
   display: flex;
   flex-direction: column;
   gap: 32rpx;
+  flex: 1;
+  min-height: 0;
 }
 
 
@@ -50,6 +61,47 @@
   align-items: center;
   gap: 20rpx;
   margin-top: 12rpx;
+}
+
+.menu-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  position: relative;
+  border-radius: 32rpx;
+  padding: 0;
+}
+
+.menu-scroll {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 16rpx 0 calc(120rpx + env(safe-area-inset-bottom)) 0;
+}
+
+.menu-scroll__spacer {
+  height: 16rpx;
+}
+
+.menu-scroll-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 72rpx;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 28rpx;
+}
+
+.menu-scroll-mask--top {
+  top: 8rpx;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
+}
+
+.menu-scroll-mask--bottom {
+  bottom: 8rpx;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0));
 }
 
 .section-title {
@@ -105,8 +157,8 @@
   padding: 0 36rpx;
   height: 66rpx;
   line-height: 66rpx;
-  font-size: 30rpx;
-  font-weight: 1000;
+  font-size: 26rpx;
+  font-weight: 600;
   color: #ffffff;
   background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(37, 99, 235, 0.88));
   border: 0;
@@ -122,6 +174,7 @@
   transform: translateY(2rpx) scale(0.98);
   box-shadow: 0 8rpx 18rpx rgba(37, 99, 235, 0.26);
 }
+
 .loading {
   color: var(--subtext-color);
   margin-bottom: 24rpx;
@@ -136,78 +189,132 @@
   width: 220rpx;
 }
 
+.refresh::after {
+  border: none;
+}
+
 .create-button {
   border-radius: 999rpx;
   padding: 0 48rpx;
   height: 72rpx;
-  line-height: 72rpx;
   font-size: 30rpx;
-  /* box-shadow: 0 12rpx 26rpx rgba(59, 130, 246, 0.28); */
   width: 220rpx;
+  line-height: 72rpx;
 }
 
+.create-button::after {
+  border: none;
+}
 
 .menu-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320rpx, 1fr));
-  gap: 28rpx;
+  gap: 20rpx;
+  padding: 16rpx 12rpx 0;
 }
 
 .menu-card {
-  background-color: var(--card-bg);
+  position: relative;
+  background: linear-gradient(165deg, rgba(252, 252, 252, 0.98), rgba(240, 240, 251, 0.6));
+  border-radius: 26rpx;
+  padding: 26rpx;
+  border: 5rpx solid rgba(148, 163, 184, 0.3);
+  box-shadow: 0 18rpx 36rpx rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 190rpx;
+}
+
+.menu-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   border-radius: 24rpx;
-  padding: 28rpx;
-  border: 2rpx solid transparent;
-  box-shadow: 0 12rpx 28rpx rgba(15, 23, 42, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1rpx rgba(255, 255, 255, 0.45);
 }
 
 .menu-card.active {
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 16rpx 36rpx rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 20rpx 42rpx rgba(59, 130, 246, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.65);
   transform: translateY(-6rpx);
 }
 
 .menu-header {
   margin-bottom: 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
 }
 
 .menu-name {
   font-size: 34rpx;
   font-weight: 600;
+  color: #0f172a;
 }
 
 .menu-desc {
   display: block;
-  margin-top: 16rpx;
-  color: rgba(15, 23, 42, 0.55);
+  color: rgba(15, 23, 42, 0.58);
+  min-height: 38rpx;
+  line-height: 38rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .menu-roles {
-  margin-top: 20rpx;
+  margin-top: auto;
+  padding-top: 20rpx;
 }
 
 .menu-roles-label {
   display: block;
-  margin-bottom: 16rpx;
-  color: rgba(15, 23, 42, 0.55);
+  margin-bottom: 14rpx;
+  color: rgba(15, 23, 42, 0.52);
+  font-size: 24rpx;
+  font-weight: 500;
 }
 
 .enter {
-  margin-top: 36rpx;
   border-radius: 999rpx;
-  height: 96rpx;
+  height: 88rpx;
   font-size: 32rpx;
-  grid-column: 1 / -1;
-  justify-self: stretch;
+  font-weight: 600;
+  letter-spacing: 4rpx;
 }
 
 .empty {
   text-align: center;
   color: var(--subtext-color);
-  padding: 120rpx 0;
-  background: rgba(248, 250, 252, 0.8);
-  border-radius: 24rpx;
+  padding: 120rpx 32rpx;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.9));
+  border-radius: 26rpx;
+  border: 1px dashed rgba(148, 163, 184, 0.4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.page-footer {
+  position: fixed;
+  left: 32rpx;
+  right: 32rpx;
+  bottom: 32rpx;
+  padding: 24rpx 28rpx calc(24rpx + env(safe-area-inset-bottom));
+  border-radius: 36rpx;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 24rpx 48rpx rgba(15, 23, 42, 0.16);
+  display: flex;
+  justify-content: center;
+  z-index: 998;
+  backdrop-filter: blur(18rpx);
+}
+
+.page-footer .enter {
+  flex: 1;
+  box-shadow: 0 18rpx 36rpx rgba(59, 130, 246, 0.28);
 }
 
 .profile-modal-backdrop {

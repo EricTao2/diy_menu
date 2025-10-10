@@ -8,7 +8,7 @@
   >
     <view class="page-inner with-tabbar {{transitionClass}}">
       <view class="top-bar">
-        <text class="page-title">菜单用户</text>
+        <text class="page-title">用户管理</text>
         <view class="top-actions">
           <button
             class="icon-btn primary"

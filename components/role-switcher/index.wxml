@@ -3,7 +3,7 @@
     <view
       class="role-chip {{item === activeRole ? 'active' : ''}}"
       data-role="{{item}}"
-      bindtap="onSwitch"
+      catchtap="onSwitch"
     >
       <text>{{roleLabels[item] || item}}</text>
     </view>

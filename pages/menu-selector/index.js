@@ -30,6 +30,7 @@ const ROLE_ENTRY_PAGES = {
 };
 
 const PROFILE_AVATAR_DIR = 'profile_avatar';
+const MAX_AVATAR_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 const getAvatarFileExtension = (path = '') => {
   const match = `${path}`.match(/\.([a-zA-Z0-9]+)(?:\?.*)?$/);
@@ -241,6 +242,7 @@ createPage({
       this.setData({ profileNickname: event.detail.value || '' });
     },
     async onChooseAvatar(event) {
+      console.log('debuggerdebuggerdebuggerdebugger')
       const avatarUrl = event?.detail?.avatarUrl;
       if (!avatarUrl) {
         wx.showToast({ title: '选择头像失败', icon: 'none' });
@@ -251,6 +253,18 @@ createPage({
         return;
       }
       if (this.data.avatarUploading) {
+        return;
+      }
+      let fileInfo;
+      try {
+        fileInfo = await wx.getFileInfo({ filePath: avatarUrl });
+      } catch (error) {
+        console.error('获取头像文件信息失败', error);
+        wx.showToast({ title: '无法读取文件', icon: 'none' });
+        return;
+      }
+      if (fileInfo?.size > MAX_AVATAR_FILE_SIZE) {
+        wx.showToast({ title: '图片不能超过10MB', icon: 'none' });
         return;
       }
       const userId = this.data.user?.id || store.getState().user?.id || 'anonymous';
