@@ -236,6 +236,25 @@
   min-height: 0;
 }
 
+.category-scroll,
+.dish-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-scroll .wx-scroll-view,
+.dish-scroll .wx-scroll-view {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.category-scroll .wx-scroll-view::-webkit-scrollbar,
+.dish-scroll .wx-scroll-view::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .dish-groups {
   display: flex;
   flex-direction: column;
@@ -443,5 +462,5 @@
 }
 
 .page--pinned .page-inner.with-tabbar {
-  padding-bottom: 180rpx; /* 如果需要锁定和未锁定不同的值，可以在这里设 */
+  padding-bottom: 180rpx;
 }
