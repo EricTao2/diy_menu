@@ -73,10 +73,7 @@
                   catchtap="onOptionToggle"
                 ></checkbox>
                 <view class="option-content">
-                  <text class="option-name">
-                    {{option.name}}
-                  </text>
-                  <text class="option-sub">{{option.choices.length}} 个可选项</text>
+                  <text class="option-name">{{option.name}}</text>
                 </view>
               </view>
             </block>
