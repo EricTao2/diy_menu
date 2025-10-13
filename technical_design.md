@@ -21,6 +21,7 @@
 - `pages/menu-selector/`：选择菜单、展示被授权菜单与角色入口，支持直接创建新菜单。
 - `pages/admin/menu-settings/`：菜单基础信息配置、主题设置，并提供删除菜单操作。
 - `pages/admin/menu-designer/`：菜单管理工作台，左侧分类、右侧菜品的所见即所得界面，支持拖拽排序、快捷上下架与跳转到编辑页；列表不再直接提供删除操作。
+- 菜单管理工作台在滚动交互上采用“锁定页 + 内部双列滚动”模式：滚动到选菜区域后，通过 IntersectionObserver 锁定整页，并开启左右 `scroll-view` 独立滚动；当任一列回到顶部继续上拉时，通过手势桥接解除锁定，让整页恢复滚动，确保切换平滑且无额外空白。
 - `pages/admin/category-list/`：分类增删改排序（备选工具页）。
 - `pages/admin/dish-list/`：菜品管理列表，支持排序调整（备选工具页）。
 - `pages/admin/dish-edit/`：菜品编辑页，支持关联自定义选项（列表形式展示，点击整行或勾选框均可切换选中，前端会去重记录并在二次进入时恢复状态），并在编辑态提供与保存按钮并排的删除操作。
@@ -57,6 +58,8 @@
 | `notifications` | `_id`, `menuId`, `type`, `payload`, `recipients`, `status`, `createdAt`, `sentAt` | 通知记录；支持站内消息或订阅消息触发。 |
 | `audit_logs` | `_id`, `menuId`, `actorId`, `action`, `payload`, `createdAt` | 关键操作审计，便于追踪。
 
+> 云函数返回数据时会执行 `normalizeDoc`：若文档缺少 `id` 字段则补写为 `_id` 值，前端统一使用 `id` 访问实体；底层读写依旧以 `_id` 或显式业务索引为准，索引效果不受影响。
+
 索引建议：
 - `menu_roles`：`menuId + userId` 组合索引。
 - `categories`、`dishes`：`menuId`、`sortOrder` 索引。
@@ -87,6 +90,7 @@
 - 在 `services/api.js` 封装调用 wx.cloud functions，统一错误处理与 loading 状态。
 - 使用 `utils/auth.js` 管理登录态、OpenID、本地缓存的角色数据；必要数据放入 `App.globalData`。
 - 菜单管理工作台（`pages/admin/menu-designer/`）在前端维护分类与菜品的本地排序列表，拖拽结束后调用 `sortCategories`/`sortDishes` 持久化 `sortOrder`，失败时回滚并提示。列表中的菜品卡片上下文仅提供“编辑”入口（取消快捷上下架），并以多行布局展示菜品名与价格。
+- 滚动锁定实现依赖顶部哨兵节点 + `IntersectionObserver` 监控，锁定后页面高度通过实时测量（含自定义 tabbar 与安全区）计算，分类/菜品列使用 `scroll-view` 并基于手势桥接策略与整页切换滚动控制，保证锁定状态下铺满视窗且解锁无闪动。
 - 在菜单页面加载时调用 `getMenuRoles` 刷新当前菜单可用角色，`role-switcher` 监听 `App.globalData.currentRole` 与 `currentMenuId`，切换身份时触发统一的 `onRoleChange` 回调以更新页面按钮、入口并保留分类位置、搜索条件、购物车数据。
 - 前端提交表单前需校验所有业务上为数字类型的输入框（如价格、库存、排序权重等），必须符合非负数/整数等约束才允许向后端发起请求；若校验失败，使用居中浮层提示框展示错误原因，可点击遮罩关闭，并在 2 秒后自动消失。
 - 菜单、分类、菜品数据支持本地缓存与失效策略，避免频繁请求。
