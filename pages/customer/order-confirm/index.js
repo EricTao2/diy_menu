@@ -1,6 +1,12 @@
 import { createPage } from '../../../utils/page';
 import { resolveThemeClass } from '../../../utils/theme-helper';
-import { getCart, submitOrder, getMenuDetail } from '../../../services/api';
+import {
+  getCart,
+  submitOrder,
+  getMenuDetail,
+  getDishesByMenu,
+  updateCart,
+} from '../../../services/api';
 import { formatCurrency } from '../../../utils/format';
 import { ensureRole } from '../../../utils/auth';
 const app = getApp();
@@ -12,6 +18,13 @@ const mapStoreToData = (state) => ({
   activeMenuId: state.activeMenuId,
   user: state.user,
 });
+
+const buildDishAvailability = (dish) => {
+  if (!dish) return 'unavailable';
+  if (dish.status !== 'on') return 'off';
+  if (dish.stockStatus === 'soldOut' || dish.soldOut) return 'soldOut';
+  return 'available';
+};
 
 createPage({
   data: {
@@ -41,16 +54,50 @@ createPage({
         wx.redirectTo({ url: '/pages/menu-selector/index' });
         return;
       }
-      const [menu, cart] = await Promise.all([
+      const [menu, cart, dishes] = await Promise.all([
         getMenuDetail(state.activeMenuId),
         getCart(state.activeMenuId, state.user.id),
+        getDishesByMenu(state.activeMenuId),
       ]);
       if (!cart.items.length) {
         wx.showToast({ title: '购物车为空，去菜单看看', icon: 'none' });
         wx.navigateBack();
         return;
       }
-      const itemsView = cart.items.map((item) => ({
+      const dishMap = dishes.reduce((acc, dish) => {
+        acc[dish.id] = dish;
+        return acc;
+      }, {});
+      const availableItems = [];
+      const removedItems = [];
+      (cart.items || []).forEach((item) => {
+        const dish = dishMap[item.dishId];
+        const availability = buildDishAvailability(dish);
+        if (availability !== 'available') {
+          removedItems.push(item.name);
+          return;
+        }
+        availableItems.push(item);
+      });
+      if (!availableItems.length) {
+        wx.showModal({
+          title: '提示',
+          content: '菜品已失效，请重新点菜',
+          showCancel: false,
+        });
+        await updateCart(state.activeMenuId, state.user.id, []);
+        wx.navigateBack();
+        return;
+      }
+      if (removedItems.length) {
+        wx.showModal({
+          title: '提示',
+          content: '部分菜品已失效，已自动过滤',
+          showCancel: false,
+        });
+        await updateCart(state.activeMenuId, state.user.id, availableItems);
+      }
+      const itemsView = availableItems.map((item) => ({
         ...item,
         priceText: formatCurrency(item.priceSnapshot),
         totalText: formatCurrency(item.priceSnapshot * item.quantity),
@@ -61,11 +108,16 @@ createPage({
             }))
           : [],
       }));
-      const total = cart.items.reduce(
+      const total = availableItems.reduce(
         (sum, item) => sum + (item.priceSnapshot || 0) * (item.quantity || 0),
         0
       );
-      this.setData({ menu, cart, itemsView, totalText: formatCurrency(total) });
+      this.setData({
+        menu,
+        cart: { ...cart, items: availableItems },
+        itemsView,
+        totalText: formatCurrency(total),
+      });
     },
     onInput(event) {
       const { field } = event.currentTarget.dataset;

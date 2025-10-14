@@ -1,1 +1,10 @@
 @import '/style/form.wxss';
+
+page,
+.page {
+  min-height: 100vh;
+}
+
+.page {
+  padding-bottom: 200rpx;
+}

@@ -1,0 +1,19 @@
+<view class="page {{themeClass}}">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:elif="{{dish}}" class="detail">
+    <view class="cover">
+      <image
+        wx:if="{{dish.image}}"
+        src="{{dish.image}}"
+        mode="aspectFill"
+      ></image>
+      <view wx:else class="cover__placeholder">暂无图片</view>
+    </view>
+    <view class="info">
+      <text class="name">{{dish.name}}</text>
+      <text class="price">¥{{dish.priceText}}</text>
+      <text class="desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+    </view>
+  </view>
+  <view wx:else class="empty">未找到菜品信息</view>
+</view>

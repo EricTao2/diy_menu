@@ -1,148 +1,169 @@
-<view class="page {{themeClass}}">
-  <view class="container">
-    <view class="role-bar" wx:if="{{roles.length > 1}}">
-      <text class="role-bar__label">当前身份</text>
-      <role-switcher
-        roles="{{roles}}"
-        active-role="{{activeRole}}"
-        role-labels="{{roleLabels}}"
-        bind:switch="onSwitchRole"
-      ></role-switcher>
-    </view>
-    <view class="role-bar" wx:elif="{{roles.length === 1}}">
-      <text class="role-bar__label">{{roleLabels[activeRole] || ''}}</text>
-    </view>
-
-    <view class="admin-panel" wx:if="{{activeRole === 'admin'}}">
-      <view class="admin-title">管理员操作</view>
-      <view class="admin-actions">
-        <block wx:for="{{adminShortcuts}}" wx:key="url" wx:for-item="shortcut">
-          <view class="admin-action" data-url="{{shortcut.url}}" bindtap="onNavigateToShortcut">
-            {{shortcut.label}}
-          </view>
-        </block>
-      </view>
-    </view>
-    <view class="admin-panel" wx:if="{{activeRole === 'chef'}}">
-      <view class="admin-title">{{roleLabels.chef}}功能</view>
-      <view class="admin-actions">
-        <block wx:for="{{chefShortcuts}}" wx:key="url" wx:for-item="shortcut">
-          <view class="admin-action" data-url="{{shortcut.url}}" bindtap="onNavigateToShortcut">
-            {{shortcut.label}}
-          </view>
-        </block>
-      </view>
-    </view>
-
-    <view class="search-area">
-      <input
-        class="search-input"
-        type="text"
-        placeholder="搜索菜品或标签"
-        value="{{searchKeyword}}"
-        bindinput="onSearchInput"
-        confirm-type="search"
-      />
-      <button wx:if="{{searchKeyword}}" class="search-clear" size="mini" bindtap="onClearSearch">
-        清空
+<view class="page {{themeClass}} {{isPinned ? 'page--locked' : ''}}">
+  <page-meta page-style="{{pageStyle}}"></page-meta>
+  <view class="page__inner">
+    <view class="toolbar">
+      <button class="icon-btn toolbar__btn" size="mini" bindtap="onGoMenuSelector">菜单选择</button>
+      <button
+        wx:if="{{roles.length > 1}}"
+        class="icon-btn toolbar__btn"
+        size="mini"
+        bindtap="onShowRoleSwitcher"
+      >
+        角色切换
       </button>
     </view>
 
-    <view class="filters">
-      <view class="filter-header">
-        <text class="filter-title">筛选</text>
-        <picker
-          mode="selector"
-          range="{{sortModes}}"
-          range-key="label"
-          value="{{activeSortIndex}}"
-          bindchange="onSortChange"
-        >
-          <view class="sort-picker">排序：{{sortModes[activeSortIndex].label}}</view>
-        </picker>
+    <view class="hero-card">
+      <view class="hero-card__media">
+        <image
+          wx:if="{{heroImage}}"
+          class="hero-card__image"
+          src="{{heroImage}}"
+          mode="aspectFill"
+        ></image>
+        <view wx:else class="hero-card__placeholder">MENU</view>
       </view>
-      <scroll-view class="tag-filter" scroll-x="true" wx:if="{{availableTags.length}}">
-        <view
-          class="tag-chip {{activeTag === '' ? 'active' : ''}}"
-          data-tag=""
-          bindtap="onSelectTag"
-        >
-          全部标签
-        </view>
-        <view
-          wx:for="{{availableTags}}"
-          wx:key="*this"
-          class="tag-chip {{activeTag === item ? 'active' : ''}}"
-          data-tag="{{item}}"
-          bindtap="onSelectTag"
-        >
-          {{item}}
-        </view>
-      </scroll-view>
+      <view class="hero-card__title-wrapper">
+        <text class="hero-card__title">{{heroTitle}}</text>
+      </view>
+      <view class="hero-card__desc" wx:if="{{heroDescription}}">{{heroDescription}}</view>
     </view>
 
-    <block wx:if="{{displayCategories.length}}">
-      <block wx:for="{{displayCategories}}" wx:key="id" wx:for-item="category">
-        <view class="category-block">
-          <view class="category-header" data-id="{{category.id}}" bindtap="onToggleCategory">
-            <text class="category-title">{{category.name}}</text>
-            <text class="collapse-action">{{category.collapsed ? '展开' : '收起'}}</text>
-          </view>
-          <view class="category-body" wx:if="{{!category.collapsed}}">
-            <block wx:for="{{category.dishes}}" wx:key="id" wx:for-item="dish">
-              <view class="dish-card" data-dish-id="{{dish.id}}" bindtap="onSelectDish">
-                <view class="dish-info">
-                  <view class="dish-text">
-                    <text class="dish-name">{{dish.name}}</text>
-                    <text class="dish-desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+    <view id="customerMenuSentinel" class="sentinel"></view>
+
+    <view class="catalog-section {{isPinned ? 'catalog-section--locked' : ''}}" style="{{catalogStyle}}">
+      <view class="catalog-layout" style="{{catalogViewportHeight > 0 ? 'height:' + catalogViewportHeight + 'px;' : ''}}">
+        <scroll-view
+          id="leftScroll"
+          class="category-column"
+          scroll-y="{{innerScrollEnabled}}"
+          scroll-top="{{leftScrollTop === null ? '' : leftScrollTop}}"
+          scroll-with-animation="true"
+          upper-threshold="8"
+          bindscrolltoupper="onColumnScrollUpper"
+        >
+          <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
+            <view
+              class="category-item {{category.id === activeCategoryId ? 'category-item--active' : ''}}"
+              data-id="{{category.id}}"
+              bindtap="onCategoryTap"
+            >
+              {{category.name}}
+            </view>
+          </block>
+        </scroll-view>
+
+        <scroll-view
+          id="rightScroll"
+          class="dish-column"
+          scroll-y="{{innerScrollEnabled}}"
+          scroll-top="{{rightScrollTop === null ? '' : rightScrollTop}}"
+          scroll-with-animation="true"
+          scroll-into-view="{{rightIntoView}}"
+          bindscroll="onRightScroll"
+          upper-threshold="8"
+          bindscrolltoupper="onColumnScrollUpper"
+        >
+          <view class="dish-groups">
+            <block wx:for="{{dishGroups}}" wx:key="categoryId" wx:for-item="group">
+              <view
+                class="dish-group dish-anchor"
+                id="category-{{group.categoryId}}"
+                data-id="{{group.categoryId}}"
+              >
+                <view class="dish-group__header">
+                  <text class="dish-group__title">{{group.categoryName}}</text>
+                  <text class="dish-group__meta" wx:if="{{group.dishes.length}}">
+                    {{group.dishes.length}} 道菜
+                  </text>
+                </view>
+                <view class="dish-group__empty" wx:if="{{!group.dishes.length}}">
+                  该分类暂时没有菜品
+                </view>
+                <block wx:for="{{group.dishes}}" wx:key="id" wx:for-item="dish">
+                  <view
+                    class="dish-card"
+                    data-dish-id="{{dish.id}}"
+                    bindtap="onViewDish"
+                  >
+                    <view class="dish-card__media">
+                      <image
+                        wx:if="{{dish.cover}}"
+                        class="dish-cover"
+                        src="{{dish.cover}}"
+                        mode="aspectFill"
+                      ></image>
+                      <view wx:else class="dish-cover dish-cover--placeholder">菜品</view>
+                    </view>
+                    <view class="dish-card__content">
+                      <text class="dish-card__name">{{dish.name}}</text>
+                      <text class="dish-card__price">{{dish.priceText}}</text>
+                    </view>
+                    <view class="dish-card__actions">
+                      <button
+                        class="dish-card__add"
+                        data-dish-id="{{dish.id}}"
+                        catchtap="onTapAddDish"
+                      >
+                        +
+                      </button>
+                    </view>
                   </view>
-                  <view class="dish-price">{{dish.priceText}}</view>
-                </view>
-                <view class="dish-tags" wx:if="{{dish.tags && dish.tags.length}}">
-                  <text wx:for="{{dish.tags}}" wx:key="*this" class="tag">{{item}}</text>
-                </view>
+                </block>
               </view>
             </block>
           </view>
-        </view>
-      </block>
-    </block>
-    <view class="empty-state" wx:elif="{{!hasResults}}">没有符合条件的菜品</view>
+        </scroll-view>
+      </view>
+    </view>
   </view>
 
-  <cart-bar
-    visible="{{cartSummary.itemCount > 0 && activeRole === 'customer'}}"
-    item-count="{{cartSummary.itemCount}}"
-    total-price="{{cartSummary.totalPrice}}"
-    item-label="件"
-    label="去购物车"
-    bind:tap="onGoToCart"
-  ></cart-bar>
+  <view
+    class="floating-checkout"
+    wx:if="{{cartSummary.totalPrice > 0 && activeRole === 'customer'}}"
+    bindtap="onGoToCheckout"
+  >
+    <view class="floating-checkout__icon">🛒</view>
+    <view class="floating-checkout__content">
+      <view class="floating-checkout__text">去下单</view>
+      <view class="floating-checkout__price">¥{{cartSummary.totalText}}</view>
+    </view>
+    <view class="floating-checkout__badge" wx:if="{{cartSummary.itemCount > 0}}">{{cartSummary.itemCount}}</view>
+  </view>
 
   <view class="modal" wx:if="{{showOptionModal}}">
-    <view class="modal-mask" bindtap="onCloseModal"></view>
-    <view class="modal-content">
-      <view class="modal-header">
-        <text>{{selectedDish.name}}</text>
-        <text class="modal-price">{{selectedDishPrice}}</text>
-      </view>
+    <view class="modal__mask" bindtap="onCloseModal"></view>
+      <view class="modal__content">
+        <view class="modal__header">
+          <text class="modal__title">{{selectedDish.name}}</text>
+          <view class="modal__header-actions">
+            <text class="modal__subtitle">¥{{selectedDishPriceText}}</text>
+            <button class="modal__close" bindtap="onCloseModal">X</button>
+          </view>
+        </view>
       <scroll-view scroll-y style="max-height: 600rpx;">
-        <view wx:if="{{selectedOptionList.length}}" class="options-area">
+        <view wx:if="{{selectedOptionList.length}}" class="modal__options">
           <option-selector
             options="{{selectedOptionList}}"
             value="{{selectedOptions}}"
             bind:change="onOptionChange"
           ></option-selector>
         </view>
-        <view class="quantity-row">
+        <view class="modal__quantity">
           <text>数量</text>
-          <input type="number" value="{{quantity}}" bindinput="onQuantityChange" />
+          <input type="number" value="{{quantity}}" bindinput="onQuantityInput" />
         </view>
       </scroll-view>
-      <view class="modal-actions">
-        <button bindtap="onCloseModal">取消</button>
-        <button class="primary" bindtap="onConfirmAdd">确认</button>
+      <view class="modal__actions">
+        <button class="modal__btn" bindtap="onCloseModal">取消</button>
+        <button class="modal__btn modal__btn--primary" bindtap="onConfirmAdd">加入购物车</button>
       </view>
     </view>
   </view>
+
+  <admin-tabbar
+    tabs="{{customerTabs}}"
+    active-key="customerMenu"
+    bind:change="onTabChange"
+  ></admin-tabbar>
 </view>

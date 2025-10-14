@@ -14,4 +14,9 @@
       ></order-item>
     </block>
   </view>
+  <admin-tabbar
+    tabs="{{customerTabs}}"
+    active-key="customerOrders"
+    bind:change="onTabChange"
+  ></admin-tabbar>
 </view>

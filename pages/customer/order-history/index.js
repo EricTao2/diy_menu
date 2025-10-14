@@ -3,6 +3,14 @@ import { resolveThemeClass } from '../../../utils/theme-helper';
 import { getOrdersByUser, updateCart, getCart } from '../../../services/api';
 import { formatCurrency, formatDateTime } from '../../../utils/format';
 import { ensureRole } from '../../../utils/auth';
+import { CUSTOMER_BOTTOM_TABS } from '../../../common/customer-tabs';
+
+const CUSTOMER_TAB_URL_MAP = CUSTOMER_BOTTOM_TABS.reduce((acc, tab) => {
+  if (tab?.key) {
+    acc[tab.key] = tab.url;
+  }
+  return acc;
+}, {});
 const app = getApp();
 const store = app.getStore();
 
@@ -31,6 +39,7 @@ const statusText = (status) => {
 createPage({
   data: {
     orders: [],
+    customerTabs: CUSTOMER_BOTTOM_TABS,
   },
   mapStoreToData,
   async onLoad() {
@@ -81,6 +90,16 @@ createPage({
     onView(event) {
       const { orderId } = event.detail;
       wx.navigateTo({ url: `/pages/common/order-detail/index?id=${orderId}` });
+    },
+    onTabChange(event) {
+      const key = event?.detail?.key;
+      if (!key || key === 'customerOrders') {
+        return;
+      }
+      const target = CUSTOMER_TAB_URL_MAP[key];
+      if (target) {
+        wx.redirectTo({ url: target });
+      }
     },
   },
 });

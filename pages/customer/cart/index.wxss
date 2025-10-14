@@ -58,3 +58,11 @@
   display: flex;
   gap: 16rpx;
 }
+page,
+.page {
+  min-height: 100vh;
+}
+
+.page {
+  padding-bottom: 200rpx;
+}

@@ -9,6 +9,7 @@
     "pages/admin/menu-designer/index",
     "pages/admin/order-overview/index",
     "pages/customer/menu/index",
+    "pages/customer/dish-detail/index",
     "pages/customer/cart/index",
     "pages/customer/order-confirm/index",
     "pages/customer/order-history/index",
