@@ -35,7 +35,6 @@ createPage({
     form: {
       remark: '',
       tableNo: '',
-      pickupType: 'dine-in',
     },
     submitting: false,
   },
@@ -97,17 +96,24 @@ createPage({
         });
         await updateCart(state.activeMenuId, state.user.id, availableItems);
       }
-      const itemsView = availableItems.map((item) => ({
-        ...item,
-        priceText: formatCurrency(item.priceSnapshot),
-        totalText: formatCurrency(item.priceSnapshot * item.quantity),
-        options: item.optionsSnapshot
-          ? Object.keys(item.optionsSnapshot).map((key) => ({
-              label: key,
-              value: item.optionsSnapshot[key],
-            }))
-          : [],
-      }));
+      const itemsView = availableItems.map((item) => {
+        const dish = dishMap[item.dishId];
+        return {
+          ...item,
+          image: dish?.image || dish?.coverImage || dish?.cover || '',
+          priceText: formatCurrency(item.priceSnapshot),
+          totalText: formatCurrency(item.priceSnapshot * item.quantity),
+          options: item.optionsSnapshot
+            ? Object.keys(item.optionsSnapshot).map((optionId) => {
+                const option = item.optionsSnapshot[optionId];
+                return {
+                  label: `${option.name}: ${option.selectedLabel}`,
+                  value: option.selectedValue,
+                };
+              })
+            : [],
+        };
+      });
       const total = availableItems.reduce(
         (sum, item) => sum + (item.priceSnapshot || 0) * (item.quantity || 0),
         0
@@ -122,9 +128,6 @@ createPage({
     onInput(event) {
       const { field } = event.currentTarget.dataset;
       this.setData({ form: { ...this.data.form, [field]: event.detail.value } });
-    },
-    onPickupChange(event) {
-      this.setData({ form: { ...this.data.form, pickupType: event.detail.value } });
     },
     async onSubmit() {
       if (this.data.submitting) return;
@@ -149,7 +152,6 @@ createPage({
           ),
           remark: form.remark,
           tableNo: form.tableNo,
-          pickupType: form.pickupType,
         });
         wx.showToast({ title: '下单成功', icon: 'success' });
         wx.redirectTo({ url: '/pages/customer/order-history/index' });

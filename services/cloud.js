@@ -62,14 +62,37 @@ export const createMenuInvite = (menuId, role = 'customer') =>
   callAdmin('createMenuInvite', { menuId, role });
 export const acceptMenuInvite = (payload) => callAdmin('acceptMenuInvite', payload);
 
-// Placeholders for yet-to-be-migrated features retain mock behaviour.
-export const getCart = mockService.getCart;
-export const updateCart = mockService.updateCart;
-export const clearCart = mockService.clearCart;
-export const submitOrder = mockService.submitOrder;
-export const getOrdersByUser = mockService.getOrdersByUser;
-export const getOrdersByMenu = mockService.getOrdersByMenu;
-export const updateOrderStatus = mockService.updateOrderStatus;
-export const getNotifications = mockService.getNotifications;
-export const markNotificationSent = mockService.markNotificationSent;
-export const duplicateOrder = mockService.duplicateOrder;
+// Cart functions migrated to cloud functions
+export const getCart = (menuId, userId) => callAdmin('getCart', { menuId, userId });
+export const updateCart = (menuId, userId, items) => callAdmin('updateCart', { menuId, userId, items });
+export const clearCart = (menuId, userId) => callAdmin('clearCart', { menuId, userId });
+
+// Order functions migrated to cloud functions
+export const submitOrder = (payload) => callAdmin('submitOrder', payload);
+export const getOrdersByUser = (userId, menuId) => callAdmin('getOrdersByUser', { userId, menuId });
+export const getOrdersByMenu = (menuId, status = null) => callAdmin('getOrdersByMenu', { menuId, status });
+export const updateOrderStatus = (orderId, updates) => callAdmin('updateOrderStatus', { orderId, ...updates });
+export const duplicateOrder = (orderId) => callAdmin('duplicateOrder', { orderId });
+
+// Notification functions migrated to cloud functions
+export const getNotifications = (menuId, type = null, status = null, page = 1, pageSize = 20) => callAdmin('getNotifications', { menuId, type, status, page, pageSize });
+export const markNotificationSent = (notificationId) => callAdmin('markNotificationSent', { notificationId });
+export const markNotificationRead = (notificationId) => callAdmin('markNotificationRead', { notificationId });
+export const markAllNotificationsRead = (menuId) => callAdmin('markAllNotificationsRead', { menuId });
+export const getUnreadNotificationCount = (menuId) => callAdmin('getUnreadNotificationCount', { menuId });
+
+// Order detail function
+export const getOrderDetail = (orderId) => callAdmin('getOrderDetail', { orderId });
+
+// Recipe functions
+export const getRecipes = () => callAdmin('getRecipes');
+export const getRecipeById = (recipeId) => callAdmin('getRecipeById', { recipeId });
+export const createRecipe = (payload) => callAdmin('createRecipe', payload);
+export const updateRecipe = (recipeId, updates) => callAdmin('updateRecipe', { recipeId, ...updates });
+export const deleteRecipe = (recipeId) => callAdmin('deleteRecipe', { recipeId });
+
+// Ingredient functions
+export const getIngredients = () => callAdmin('getIngredients');
+export const createIngredient = (payload) => callAdmin('createIngredient', payload);
+export const updateIngredient = (ingredientId, updates) => callAdmin('updateIngredient', { ingredientId, ...updates });
+export const deleteIngredient = (ingredientId) => callAdmin('deleteIngredient', { ingredientId });

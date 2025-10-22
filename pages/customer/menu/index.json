@@ -1,6 +1,7 @@
 {
   "usingComponents": {
     "option-selector": "/components/option-selector/index",
-    "admin-tabbar": "/custom-tab-bar/index"
+    "custom-tab-bar": "/custom-tab-bar/index",
+    "menu-scroll-container": "/components/menu-scroll-container/index"
   }
 }

@@ -20,6 +20,7 @@ const DEFAULT_DATA = {
       defaultCategoryId: 'cat-001',
       theme: 'light',
       status: 'active',
+      coverImage: '',
     },
     {
       id: 'menu-002',
@@ -28,6 +29,7 @@ const DEFAULT_DATA = {
       defaultCategoryId: 'cat-101',
       theme: 'forest',
       status: 'active',
+      coverImage: '',
     },
   ],
   menuRoles: [
@@ -146,7 +148,6 @@ const DEFAULT_DATA = {
       totalPrice: 100,
       remark: '少辣',
       tableNo: 'A12',
-      pickupType: 'dine-in',
       historyRefId: null,
       createdAt: Date.now() - 1000 * 60 * 60 * 12,
       updatedAt: Date.now() - 1000 * 60 * 30,
@@ -302,7 +303,7 @@ const sanitizeOptionPayload = (option = {}) => {
     if (!label) {
       return;
     }
-    const value = `${choice.value || ''}`.trim() || label;
+    const value = `${choice.value || ''}`.trim();
     if (seen.has(value)) {
       return;
     }
@@ -579,7 +580,7 @@ export const updateMenuSettings = async (menuId, payload) => {
   return delay(true);
 };
 
-export const createMenu = async ({ name, description = '', theme = 'light' }) => {
+export const createMenu = async ({ name, description = '', theme = 'light', coverImage = '' }) => {
   const trimmedName = (name || '').trim();
   if (!trimmedName) {
     throw new Error('name_required');
@@ -596,6 +597,7 @@ export const createMenu = async ({ name, description = '', theme = 'light' }) =>
     defaultCategoryId,
     theme: theme || 'light',
     status: 'active',
+    coverImage: coverImage || '',
     createdAt: now,
     updatedAt: now,
   };
@@ -878,7 +880,6 @@ export const submitOrder = async ({
   totalPrice,
   remark,
   tableNo,
-  pickupType,
   historyRefId = null,
 }) => {
   const db = loadDB();
@@ -891,7 +892,6 @@ export const submitOrder = async ({
     totalPrice,
     remark,
     tableNo,
-    pickupType,
     historyRefId,
     createdAt: Date.now(),
     updatedAt: Date.now(),

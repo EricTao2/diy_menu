@@ -20,6 +20,8 @@ const store = app.getStore();
 const themeManager = app.getThemeManager();
 
 const PAGE_TRANSITION_DURATION = 180;
+const MENU_COVER_DIR = 'menu_covers';
+const MAX_COVER_FILE_SIZE = 10 * 1024 * 1024;
 
 const slugify = (text = '') =>
   `${text}`
@@ -45,6 +47,7 @@ createPage({
       name: '',
       description: '',
       theme: 'light',
+      coverImage: '',
     },
     themeOptions: [],
     saving: false,
@@ -59,6 +62,7 @@ createPage({
     optionChoiceInput: '',
     optionEditing: false,
     transitionClass: '',
+    coverUploading: false,
   },
   mapStoreToData,
   async onLoad() {
@@ -119,11 +123,121 @@ createPage({
             name: menu.name,
             description: menu.description,
             theme: menu.theme,
+            coverImage: menu.coverImage || '',
           },
         });
       } catch (error) {
         console.error('加载菜单设置失败', error);
       }
+    },
+    setCoverImage(value) {
+      this.setData({
+        form: {
+          ...this.data.form,
+          coverImage: value,
+        },
+      });
+    },
+    async onChooseCover() {
+      if (this.data.coverUploading) {
+        return;
+      }
+      if (!wx.cloud || typeof wx.cloud.uploadFile !== 'function') {
+        wx.showToast({ title: '云能力不可用', icon: 'none' });
+        return;
+      }
+      const chooseImage = wx.chooseMedia
+        ? () =>
+            wx.chooseMedia({
+              count: 1,
+              mediaType: ['image'],
+              sizeType: ['compressed'],
+            })
+        : () =>
+            wx.chooseImage({
+              count: 1,
+              sizeType: ['compressed'],
+            });
+      let filePath = '';
+      let fileSize = 0;
+      try {
+        const res = await chooseImage();
+        if (!res) {
+          return;
+        }
+        if (res.tempFiles && res.tempFiles.length) {
+          filePath = res.tempFiles[0].tempFilePath;
+          fileSize = res.tempFiles[0].size || 0;
+        } else if (res.tempFilePaths && res.tempFilePaths.length) {
+          filePath = res.tempFilePaths[0];
+        }
+        if (!filePath) {
+          return;
+        }
+      } catch (error) {
+        if (error && error.errMsg && error.errMsg.includes('cancel')) {
+          return;
+        }
+        console.error('选择菜单主图失败', error);
+        wx.showToast({ title: '选择失败', icon: 'none' });
+        return;
+      }
+      if (fileSize && fileSize > MAX_COVER_FILE_SIZE) {
+        wx.showToast({ title: '图片不能超过10MB', icon: 'none' });
+        return;
+      }
+      await this.uploadCoverImage(filePath);
+    },
+    async uploadCoverImage(tempFilePath) {
+      if (!tempFilePath) {
+        return;
+      }
+      if (!wx.cloud || typeof wx.cloud.uploadFile !== 'function') {
+        wx.showToast({ title: '云能力不可用', icon: 'none' });
+        return;
+      }
+      const { activeMenuId } = store.getState();
+      const menuId = activeMenuId || 'menu';
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).slice(2, 8);
+      const extMatch = /\.([a-zA-Z0-9]+)(\?.*)?$/.exec(tempFilePath);
+      const ext = extMatch ? extMatch[1] : 'jpg';
+      const cloudPath = `${MENU_COVER_DIR}/${menuId}-${timestamp}-${random}.${ext}`;
+      this.setData({ coverUploading: true });
+      wx.showLoading({ title: '上传中', mask: true });
+      try {
+        const result = await wx.cloud.uploadFile({
+          cloudPath,
+          filePath: tempFilePath,
+        });
+        if (!result || !result.fileID) {
+          throw new Error('missing_file_id');
+        }
+        this.setCoverImage(result.fileID);
+        wx.showToast({ title: '上传成功', icon: 'success' });
+      } catch (error) {
+        console.error('上传菜单主图失败', error);
+        wx.showToast({ title: '上传失败', icon: 'none' });
+      } finally {
+        wx.hideLoading();
+        this.setData({ coverUploading: false });
+      }
+    },
+    onClearCover() {
+      if (!this.data.form.coverImage) {
+        return;
+      }
+      this.setCoverImage('');
+    },
+    onPreviewCover() {
+      const cover = this.data.form.coverImage;
+      if (!cover) {
+        return;
+      }
+      wx.previewImage({
+        urls: [cover],
+        current: cover,
+      });
     },
     async loadCategories(menuId) {
       try {

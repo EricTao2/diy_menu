@@ -1,147 +1,199 @@
-<view class="page {{themeClass}} {{isPinned ? 'page--locked' : ''}}">
-  <page-meta page-style="{{pageStyle}}"></page-meta>
-  <view class="page__inner">
-    <view class="toolbar">
-      <button class="icon-btn toolbar__btn" size="mini" bindtap="onGoMenuSelector">菜单选择</button>
-      <button
-        wx:if="{{roles.length > 1}}"
-        class="icon-btn toolbar__btn"
-        size="mini"
-        bindtap="onShowRoleSwitcher"
-      >
-        角色切换
-      </button>
-    </view>
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+    <menu-scroll-container
+      id="menuScroll"
+      wx:else
+      tabbar-height="{{120}}"
+      sentinel-offset="{{sentinelOffset}}"
+      debug-sentinel="{{debugSentinel}}"
+      container-padding="{{0}}"
+      highlight-boundary="{{true}}"
+      flush-left="{{true}}"
+      flush-right="{{true}}"
+      height-offset="{{30}}"
+      category-width="{{categoryListWidth}}"
+      bind:lockchange="onLockChange"
+      bind:dishscroll="onDishPanelScroll"
+      bind:pagescroll="onPagePanelScroll"
+    >
+      <view slot="header">
+        <view class="toolbar">
+          <button class="toolbar__btn" size="mini" bindtap="onGoMenuSelector">菜单选择</button>
+          <button
+            wx:if="{{roles.length > 1}}"
+            class="toolbar__btn"
+            size="mini"
+            bindtap="onShowRoleSwitcher"
+          >
+            角色切换
+          </button>
+        </view>
 
-    <view class="hero-card">
-      <view class="hero-card__media">
-        <image
-          wx:if="{{heroImage}}"
-          class="hero-card__image"
-          src="{{heroImage}}"
-          mode="aspectFill"
-        ></image>
-        <view wx:else class="hero-card__placeholder">MENU</view>
+        <view class="hero-card">
+          <view class="hero-card__media">
+            <image
+              wx:if="{{heroImage}}"
+              class="hero-card__image"
+              src="{{heroImage}}"
+              mode="aspectFill"
+            ></image>
+            <view wx:else class="hero-card__placeholder">MENU</view>
+          </view>
+          <view class="hero-card__text">
+            <text class="hero-card__title">{{heroTitle}}</text>
+            <text class="hero-card__desc" wx:if="{{heroDescription}}">{{heroDescription}}</text>
+          </view>
+        </view>
       </view>
-      <view class="hero-card__title-wrapper">
-        <text class="hero-card__title">{{heroTitle}}</text>
+
+      <view slot="categories">
+        <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
+          <view
+            class="category-item {{category.id === activeCategoryId ? 'category-item--active' : ''}}"
+            id="category-item-{{category.id}}"
+            data-id="{{category.id}}"
+            bindtap="onCategoryTap"
+          >
+            <text class="category-item__name">{{category.name}}</text>
+          </view>
+        </block>
+        <view class="scroll-spacer scroll-spacer--category"></view>
       </view>
-      <view class="hero-card__desc" wx:if="{{heroDescription}}">{{heroDescription}}</view>
-    </view>
 
-    <view id="customerMenuSentinel" class="sentinel"></view>
-
-    <view class="catalog-section {{isPinned ? 'catalog-section--locked' : ''}}" style="{{catalogStyle}}">
-      <view class="catalog-layout" style="{{catalogViewportHeight > 0 ? 'height:' + catalogViewportHeight + 'px;' : ''}}">
-        <scroll-view
-          id="leftScroll"
-          class="category-column"
-          scroll-y="{{innerScrollEnabled}}"
-          scroll-top="{{leftScrollTop === null ? '' : leftScrollTop}}"
-          scroll-with-animation="true"
-          upper-threshold="8"
-          bindscrolltoupper="onColumnScrollUpper"
-        >
-          <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
-            <view
-              class="category-item {{category.id === activeCategoryId ? 'category-item--active' : ''}}"
-              data-id="{{category.id}}"
-              bindtap="onCategoryTap"
-            >
-              {{category.name}}
-            </view>
-          </block>
-        </scroll-view>
-
-        <scroll-view
-          id="rightScroll"
-          class="dish-column"
-          scroll-y="{{innerScrollEnabled}}"
-          scroll-top="{{rightScrollTop === null ? '' : rightScrollTop}}"
-          scroll-with-animation="true"
-          scroll-into-view="{{rightIntoView}}"
-          bindscroll="onRightScroll"
-          upper-threshold="8"
-          bindscrolltoupper="onColumnScrollUpper"
-        >
+      <view slot="dishes">
+        <block wx:if="{{dishGroups.length}}">
           <view class="dish-groups">
             <block wx:for="{{dishGroups}}" wx:key="categoryId" wx:for-item="group">
-              <view
-                class="dish-group dish-anchor"
-                id="category-{{group.categoryId}}"
-                data-id="{{group.categoryId}}"
-              >
+              <view class="dish-group" id="dish-group-{{group.categoryId}}" data-id="{{group.categoryId}}">
                 <view class="dish-group__header">
                   <text class="dish-group__title">{{group.categoryName}}</text>
-                  <text class="dish-group__meta" wx:if="{{group.dishes.length}}">
-                    {{group.dishes.length}} 道菜
-                  </text>
                 </view>
                 <view class="dish-group__empty" wx:if="{{!group.dishes.length}}">
                   该分类暂时没有菜品
                 </view>
-                <block wx:for="{{group.dishes}}" wx:key="id" wx:for-item="dish">
-                  <view
-                    class="dish-card"
-                    data-dish-id="{{dish.id}}"
-                    bindtap="onViewDish"
-                  >
-                    <view class="dish-card__media">
-                      <image
-                        wx:if="{{dish.cover}}"
-                        class="dish-cover"
-                        src="{{dish.cover}}"
-                        mode="aspectFill"
-                      ></image>
-                      <view wx:else class="dish-cover dish-cover--placeholder">菜品</view>
+                <view class="dish-list" wx:if="{{group.dishes.length}}">
+                  <block wx:for="{{group.dishes}}" wx:key="id" wx:for-item="dish">
+                    <view class="dish-card" data-dish-id="{{dish.id}}" bindtap="onViewDish">
+                      <view class="dish-card__media">
+                        <image
+                          wx:if="{{dish.cover}}"
+                          class="dish-card__cover"
+                          src="{{dish.cover}}"
+                          mode="aspectFill"
+                        ></image>
+                        <view wx:else class="dish-card__cover dish-card__cover--placeholder">菜品</view>
+                      </view>
+                      <view class="dish-card__content">
+                        <view class="dish-card__header">
+                          <text class="dish-card__name">{{dish.name}}</text>
+                          <text class="dish-card__recipe" wx:if="{{dish.recipeId}}">📖 有菜谱</text>
+                        </view>
+                        <text class="dish-card__price">{{dish.priceText}}</text>
+                        <text class="dish-card__desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+                      </view>
+                      <view class="dish-card__actions">
+                        <block wx:if="{{dish.hasOptions}}">
+                          <button
+                            id="spec-btn-{{dish.id}}"
+                            class="dish-card__spec-btn"
+                            data-dish-id="{{dish.id}}"
+                            data-dom-id="spec-btn-{{dish.id}}"
+                            data-dot-color="#1b82e9"
+                            catchtap="onTapAddDish"
+                          >
+                            选规格
+                          </button>
+                          <view
+                            class="dish-card__badge"
+                            wx:if="{{cartDishCountMap[dish.id]}}"
+                          >
+                            {{cartDishCountMap[dish.id]}}
+                          </view>
+                        </block>
+                        <block wx:else>
+                          <view
+                            class="dish-card__quantity-controls"
+                            wx:if="{{cartDishCountMap[dish.id]}}"
+                          >
+                            <button
+                              class="dish-card__qty-btn"
+                              data-dish-id="{{dish.id}}"
+                              catchtap="onTapDecreaseDish"
+                            >
+                              -
+                            </button>
+                            <text class="dish-card__qty-count">
+                              {{cartDishCountMap[dish.id]}}
+                            </text>
+                            <button
+                              id="add-btn-{{dish.id}}"
+                              class="dish-card__qty-btn"
+                              data-dish-id="{{dish.id}}"
+                              data-dom-id="add-btn-{{dish.id}}"
+                              data-dot-color="#1b82e9"
+                              catchtap="onTapAddDish"
+                            >
+                              +
+                            </button>
+                          </view>
+                          <button
+                            wx:else
+                            id="add-btn-{{dish.id}}"
+                            class="dish-card__action-btn"
+                            data-dish-id="{{dish.id}}"
+                            data-dom-id="add-btn-{{dish.id}}"
+                            data-dot-color="#437af2"
+                            catchtap="onTapAddDish"
+                          >
+                            +
+                          </button>
+                        </block>
+                      </view>
                     </view>
-                    <view class="dish-card__content">
-                      <text class="dish-card__name">{{dish.name}}</text>
-                      <text class="dish-card__price">{{dish.priceText}}</text>
-                    </view>
-                    <view class="dish-card__actions">
-                      <button
-                        class="dish-card__add"
-                        data-dish-id="{{dish.id}}"
-                        catchtap="onTapAddDish"
-                      >
-                        +
-                      </button>
-                    </view>
-                  </view>
-                </block>
+                  </block>
+                </view>
               </view>
             </block>
           </view>
-        </scroll-view>
+          <view class="scroll-spacer scroll-spacer--dishes"></view>
+        </block>
+        <view class="empty" wx:else>暂无菜品</view>
       </view>
-    </view>
+    </menu-scroll-container>
+  </view>
+
+  <view class="fly-dot-layer">
+    <block wx:for="{{flyDots}}" wx:key="id">
+      <view
+        class="fly-dot"
+        style="top: {{item.top}}px; left: {{item.left}}px; background: {{item.color}}; transform: translate3d({{item.translateX}}px, {{item.translateY}}px, 0); opacity: {{item.opacity}};"
+      ></view>
+    </block>
   </view>
 
   <view
-    class="floating-checkout"
-    wx:if="{{cartSummary.totalPrice > 0 && activeRole === 'customer'}}"
+    id="floating-cart"
+    class="floating-checkout {{cartSummary.totalPrice > 0 && activeRole === 'customer' ? '' : 'floating-checkout--hidden'}}"
     bindtap="onGoToCheckout"
   >
-    <view class="floating-checkout__icon">🛒</view>
+    <view class="floating-checkout__icon"></view>
     <view class="floating-checkout__content">
       <view class="floating-checkout__text">去下单</view>
-      <view class="floating-checkout__price">¥{{cartSummary.totalText}}</view>
+      <view class="floating-checkout__price">{{cartSummary.totalText}}</view>
     </view>
     <view class="floating-checkout__badge" wx:if="{{cartSummary.itemCount > 0}}">{{cartSummary.itemCount}}</view>
   </view>
 
   <view class="modal" wx:if="{{showOptionModal}}">
     <view class="modal__mask" bindtap="onCloseModal"></view>
-      <view class="modal__content">
-        <view class="modal__header">
-          <text class="modal__title">{{selectedDish.name}}</text>
-          <view class="modal__header-actions">
-            <text class="modal__subtitle">¥{{selectedDishPriceText}}</text>
-            <button class="modal__close" bindtap="onCloseModal">X</button>
-          </view>
-        </view>
-      <scroll-view scroll-y style="max-height: 600rpx;">
+    <view class="modal__content">
+      <button class="modal__close" bindtap="onCloseModal">×</button>
+      <view class="modal__header">
+        <text class="modal__title">{{selectedDish.name}}</text>
+        <text class="modal__subtitle">¥{{selectedDishPriceText}}</text>
+      </view>
+      <scroll-view scroll-y class="modal__scroll">
         <view wx:if="{{selectedOptionList.length}}" class="modal__options">
           <option-selector
             options="{{selectedOptionList}}"
@@ -155,15 +207,17 @@
         </view>
       </scroll-view>
       <view class="modal__actions">
-        <button class="modal__btn" bindtap="onCloseModal">取消</button>
         <button class="modal__btn modal__btn--primary" bindtap="onConfirmAdd">加入购物车</button>
       </view>
     </view>
   </view>
 
-  <admin-tabbar
-    tabs="{{customerTabs}}"
-    active-key="customerMenu"
-    bind:change="onTabChange"
-  ></admin-tabbar>
+  <!-- 固定tabbar区域 -->
+  <view class="tabbar-container">
+    <custom-tab-bar
+      tabs="{{customerTabs}}"
+      active-key="customerMenu"
+      bind:change="onTabChange"
+    ></custom-tab-bar>
+  </view>
 </view>

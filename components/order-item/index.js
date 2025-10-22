@@ -58,10 +58,13 @@ Component({
           ...item,
           totalPriceText: formatCurrency(item.unitPrice * item.quantity),
           optionsArray: item.optionsSnapshot
-            ? Object.keys(item.optionsSnapshot).map((key) => ({
-                label: key,
-                value: item.optionsSnapshot[key],
-              }))
+            ? Object.keys(item.optionsSnapshot).map((optionId) => {
+                const option = item.optionsSnapshot[optionId];
+                return {
+                  label: `${option.name}: ${option.selectedLabel}`,
+                  value: option.selectedValue,
+                };
+              })
             : [],
         })),
       };

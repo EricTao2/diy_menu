@@ -6,6 +6,7 @@ import {
   upsertDish,
   getDishDetail,
   deleteDish,
+  getRecipeById,
 } from '../../../services/api';
 import { ensureRole } from '../../../utils/auth';
 const app = getApp();
@@ -74,7 +75,9 @@ createPage({
       description: '',
       tags: '',
       optionIds: [],
+      recipeId: '',
     },
+    recipe: null,
     saving: false,
     deleting: false,
     transitionClass: '',
@@ -128,9 +131,15 @@ createPage({
             description: dish.description,
             tags: (dish.tags || []).join(','),
             optionIds: normalizedOptionIds,
+            recipeId: dish.recipeId || '',
           },
           optionSelectionMap: buildOptionSelectionMap(normalizedOptionIds),
         }, () => this.updateSelectedCategoryName());
+        
+        // 加载关联的菜谱
+        if (dish.recipeId) {
+          await this.loadRecipe(dish.recipeId);
+        }
       } else {
         const preferred = query?.categoryId;
         const category = categories.find((item) => item.id === preferred) || categories[0] || null;
@@ -214,6 +223,55 @@ createPage({
         },
       });
     },
+    async loadRecipe(recipeId) {
+      try {
+        const recipe = await getRecipeById(recipeId);
+        this.setData({ recipe });
+      } catch (error) {
+        console.error('加载菜谱失败', error);
+        this.setData({ recipe: null });
+      }
+    },
+    onSelectRecipe() {
+      wx.navigateTo({
+        url: '/pages/user/recipe-select/index',
+        events: {
+          selectRecipe: async (recipe) => {
+            const { form } = this.data;
+            
+            // 自动填充菜品信息
+            const updates = { recipeId: recipe.id };
+            if (!form.name) {
+              updates.name = recipe.name;
+            }
+            if (!form.description) {
+              updates.description = recipe.content || '';
+            }
+            if (!form.image && recipe.coverImage) {
+              updates.image = recipe.coverImage;
+            }
+            
+            this.setData({
+              form: { ...form, ...updates },
+              recipe,
+            });
+            
+            wx.showToast({ title: '已关联菜谱', icon: 'success' });
+          },
+        },
+      });
+    },
+    onViewRecipe() {
+      const { form } = this.data;
+      if (form.recipeId) {
+        wx.navigateTo({
+          url: `/pages/user/recipe-detail/index?recipeId=${form.recipeId}`,
+        });
+      }
+    },
+    onChangeRecipe() {
+      this.onSelectRecipe();
+    },
     async onSubmit() {
       const { activeMenuId } = store.getState();
       const {
@@ -226,6 +284,7 @@ createPage({
         description,
         tags,
         optionIds,
+        recipeId,
       } = this.data.form;
       if (!name) {
         this.showError('请填写菜品名称');
@@ -264,6 +323,7 @@ createPage({
             .map((tag) => tag.trim())
             .filter(Boolean),
           optionIds: normalizedOptionIds,
+          recipeId: recipeId || undefined,
         });
         wx.showToast({ title: '操作成功', icon: 'success' });
         wx.navigateBack();

@@ -1,0 +1,112 @@
+<view class="page">
+  <!-- Tab切换 -->
+  <view class="tabs">
+    <view 
+      class="tab-item {{currentTab === 'recipes' ? 'active' : ''}}"
+      data-tab="recipes"
+      bindtap="onTabChange"
+    >
+      <text class="tab-text">我的菜谱</text>
+    </view>
+    <view 
+      class="tab-item {{currentTab === 'ingredients' ? 'active' : ''}}"
+      data-tab="ingredients"
+      bindtap="onTabChange"
+    >
+      <text class="tab-text">我的原材料</text>
+    </view>
+  </view>
+
+  <!-- 菜谱列表 -->
+  <view class="tab-content" wx:if="{{currentTab === 'recipes'}}">
+    <view class="search-bar">
+      <input
+        class="search-input"
+        type="text"
+        placeholder="搜索菜谱名称"
+        value="{{recipeSearchQuery}}"
+        bindinput="onRecipeSearchInput"
+      />
+      <button class="create-btn" bindtap="onCreateRecipe">新建菜谱</button>
+    </view>
+
+    <view wx:if="{{recipesLoading}}" class="loading">加载中...</view>
+
+    <view wx:elif="{{filteredRecipes.length === 0}}" class="empty">
+      <text class="empty-text">{{recipeSearchQuery ? '未找到相关菜谱' : '还没有菜谱，点击上方按钮创建'}}</text>
+    </view>
+
+    <view wx:else class="recipe-list">
+      <view
+        wx:for="{{filteredRecipes}}"
+        wx:key="id"
+        class="recipe-card"
+        data-recipe-id="{{item.id}}"
+        bindtap="onRecipeCardTap"
+      >
+        <image
+          class="recipe-image"
+          src="{{item.coverImage || 'https://dummyimage.com/200x200/e5e7eb/9ca3af&text=Recipe'}}"
+          mode="aspectFill"
+        />
+        <view class="recipe-info">
+          <text class="recipe-name">{{item.name}}</text>
+          <text class="recipe-time">{{item.createdAtText}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 原材料列表 -->
+  <view class="tab-content" wx:if="{{currentTab === 'ingredients'}}">
+    <view class="search-bar">
+      <input
+        class="search-input"
+        type="text"
+        placeholder="搜索原材料名称"
+        value="{{ingredientSearchQuery}}"
+        bindinput="onIngredientSearchInput"
+      />
+      <button class="create-btn" bindtap="onCreateIngredient">新建原材料</button>
+    </view>
+
+    <view wx:if="{{ingredientsLoading}}" class="loading">加载中...</view>
+
+    <view wx:elif="{{filteredIngredients.length === 0}}" class="empty">
+      <text class="empty-text">{{ingredientSearchQuery ? '未找到相关原材料' : '还没有原材料，点击上方按钮创建'}}</text>
+    </view>
+
+    <view wx:else class="ingredient-list">
+      <view
+        wx:for="{{filteredIngredients}}"
+        wx:key="id"
+        class="ingredient-card"
+      >
+        <image
+          class="ingredient-image"
+          src="{{item.image || 'https://dummyimage.com/100x100/e5e7eb/9ca3af&text=Ing'}}"
+          mode="aspectFill"
+        />
+        <view class="ingredient-info">
+          <text class="ingredient-name">{{item.name}}</text>
+          <text class="ingredient-unit">单位：{{item.unit}}</text>
+          <text wx:if="{{item.remark}}" class="ingredient-remark">{{item.remark}}</text>
+        </view>
+        <view class="ingredient-actions">
+          <button
+            class="action-btn edit-btn"
+            data-ingredient-id="{{item.id}}"
+            bindtap="onEditIngredient"
+          >编辑</button>
+          <button
+            class="action-btn delete-btn"
+            data-ingredient-id="{{item.id}}"
+            data-ingredient-name="{{item.name}}"
+            bindtap="onDeleteIngredient"
+          >删除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
+

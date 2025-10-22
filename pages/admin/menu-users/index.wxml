@@ -65,5 +65,9 @@
       </view>
     </view>
   </scroll-view>
-  <admin-tabbar active-key="menuUsers" bind:change="onTabChange"></admin-tabbar>
+  
+  <!-- 固定tabbar区域 -->
+  <view class="tabbar-container">
+    <admin-tabbar active-key="menuUsers" bind:change="onTabChange"></admin-tabbar>
+  </view>
 </view>

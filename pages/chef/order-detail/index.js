@@ -53,10 +53,13 @@ createPage({
           ...item,
           totalText: formatCurrency(item.unitPrice * item.quantity),
           options: item.optionsSnapshot
-            ? Object.keys(item.optionsSnapshot).map((key) => ({
-                label: key,
-                value: item.optionsSnapshot[key],
-              }))
+            ? Object.keys(item.optionsSnapshot).map((optionId) => {
+                const option = item.optionsSnapshot[optionId];
+                return {
+                  label: `${option.name}: ${option.selectedLabel}`,
+                  value: option.selectedValue,
+                };
+              })
             : [],
         })),
       };
@@ -68,7 +71,7 @@ createPage({
     statusText(status) {
       switch (status) {
         case 'new':
-          return '新订单';
+          return '已下单';
         case 'processing':
           return '处理中';
         case 'completed':

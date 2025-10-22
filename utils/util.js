@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { getWindowMetrics } from './system-info';
 
 const formatTime = (date, template) => dayjs(date).format(template);
 
@@ -66,7 +67,12 @@ export const loadSystemWidth = () => {
   }
 
   try {
-    ({ screenWidth: systemWidth, pixelRatio } = wx.getSystemInfoSync());
+    const metrics = getWindowMetrics();
+    systemWidth = metrics?.windowWidth || metrics?.screenWidth || 0;
+    if (!systemWidth && typeof wx.getSystemInfoSync === 'function') {
+      const legacy = wx.getSystemInfoSync();
+      systemWidth = legacy.screenWidth || legacy.windowWidth || 0;
+    }
   } catch (e) {
     systemWidth = 0;
   }

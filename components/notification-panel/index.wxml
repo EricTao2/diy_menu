@@ -1,10 +1,26 @@
 <view class="notification-panel">
   <block wx:if="{{notifications.length}}">
     <block wx:for="{{notifications}}" wx:key="id">
-      <view class="notification-item" data-notification-id="{{item.id}}" bindtap="onTap">
-        <text class="notification-title">{{item.title}}</text>
-        <text class="notification-message">{{item.message}}</text>
-        <text class="notification-time">{{item.createdAtText}}</text>
+      <view 
+        class="notification-item {{item.read ? 'read' : 'unread'}}" 
+        data-notification-id="{{item.id}}" 
+        bindtap="onTap"
+      >
+        <view class="notification-header">
+          <view class="notification-icon">{{item.icon}}</view>
+          <view class="notification-content">
+            <view class="notification-title">{{item.typeText}}</view>
+            <view class="notification-time">{{item.createdAtText}}</view>
+          </view>
+          <view class="notification-status">
+            <view class="unread-dot" wx:if="{{!item.read}}"></view>
+          </view>
+        </view>
+        <view class="notification-message" wx:if="{{item.payload}}">
+          <text wx:if="{{item.type === 'order:new'}}">您有新的订单需要处理</text>
+          <text wx:elif="{{item.type === 'order:status_changed'}}">订单状态已更新</text>
+          <text wx:else>{{item.payload.message || '系统通知'}}</text>
+        </view>
       </view>
     </block>
   </block>

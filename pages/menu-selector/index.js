@@ -149,6 +149,11 @@ createPage({
         profileAvatar: user?.avatar || '',
       });
     },
+    onGoToProfile() {
+      wx.navigateTo({
+        url: '/pages/user/profile/index',
+      });
+    },
     onCloseProfile() {
       if (this.data.profileLoading) {
         return;
@@ -204,10 +209,16 @@ createPage({
     onSwitchRole(event) {
       const { role } = event.detail;
       const { menuId } = event.currentTarget.dataset;
+      // 如果点击的是非选中菜单的角色tag，切换到该菜单并选中对应角色
       if (menuId !== this.data.selectedMenuId) {
-        return;
+        this.setData({
+          selectedMenuId: menuId,
+          selectedRole: role,
+        });
+      } else {
+        // 如果是当前选中菜单，只切换角色
+        this.setData({ selectedRole: role });
       }
-      this.setData({ selectedRole: role });
     },
     onEnter() {
       const { selectedMenuId, selectedRole } = this.data;

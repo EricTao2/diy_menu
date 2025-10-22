@@ -33,9 +33,12 @@
       </view>
     </block>
   </view>
-  <admin-tabbar
-    tabs="{{customerTabs}}"
-    active-key="customerCart"
-    bind:change="onTabChange"
-  ></admin-tabbar>
+  <!-- 固定tabbar区域 -->
+  <view class="tabbar-container">
+    <custom-tab-bar
+      tabs="{{customerTabs}}"
+      active-key="customerCart"
+      bind:change="onTabChange"
+    ></custom-tab-bar>
+  </view>
 </view>

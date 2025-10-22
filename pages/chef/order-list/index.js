@@ -14,7 +14,7 @@ const mapStoreToData = (state) => ({
 
 const STATUS_TABS = [
   { key: 'all', label: '全部' },
-  { key: 'new', label: '新订单' },
+  { key: 'new', label: '已下单' },
   { key: 'processing', label: '处理中' },
   { key: 'completed', label: '已完成' },
   { key: 'cancelled', label: '已取消' },
@@ -75,7 +75,7 @@ createPage({
     getStatusText(status) {
       switch (status) {
         case 'new':
-          return '新订单';
+          return '已下单';
         case 'processing':
           return '处理中';
         case 'completed':

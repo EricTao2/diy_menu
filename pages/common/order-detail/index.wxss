@@ -1,5 +1,9 @@
 @import '/style/form.wxss';
 
+.page {
+  padding-bottom: 120rpx; /* 为底部固定的总价区域留出空间 */
+}
+
 .order-meta {
   background-color: var(--card-bg);
   border-radius: 16rpx;
@@ -10,14 +14,209 @@
   gap: 8rpx;
 }
 
-.items .item-row {
+.items {
+  margin-bottom: 24rpx;
+}
+
+.item-card {
+  display: flex;
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+}
+
+.item-image {
+  width: 120rpx;
+  height: 120rpx;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.dish-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 12rpx;
+}
+
+.item-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.item-header {
   display: flex;
   justify-content: space-between;
-  font-weight: 600;
+  align-items: flex-start;
   margin-bottom: 8rpx;
 }
 
-.item-options {
+.item-name {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-color);
+  flex: 1;
+  margin-right: 16rpx;
+}
+
+.item-quantity {
+  font-size: 28rpx;
   color: var(--subtext-color);
-  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+
+.item-options {
+  margin-bottom: 12rpx;
+}
+
+.option-text {
+  display: block;
+  font-size: 24rpx;
+  color: var(--subtext-color);
+  margin-bottom: 4rpx;
+}
+
+.item-price {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.unit-price {
+  font-size: 28rpx;
+  color: var(--subtext-color);
+}
+
+.total-price {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.remarks,
+.table,
+.handled-remark {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  color: var(--text-color);
+}
+
+/* 操作者信息样式 */
+.operators-section {
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+}
+
+.operators-section .section-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 16rpx;
+}
+
+.operator-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid var(--border-color);
+}
+
+.operator-item:last-child {
+  border-bottom: none;
+}
+
+.operator-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.operator-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.operator-name {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.operator-time {
+  font-size: 24rpx;
+  color: var(--subtext-color);
+}
+
+.order-total-section {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--bg-color);
+  border-top: 1rpx solid var(--border-color);
+  padding: 24rpx;
+  z-index: 100;
+}
+
+.total-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--card-bg);
+  border-radius: 16rpx;
+  padding: 24rpx;
+}
+
+.total-label {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.total-value {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+/* 菜谱标识 */
+.recipe-tag-small {
+  display: inline-block;
+  padding: 4rpx 12rpx;
+  margin-left: 12rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+  color: #3b82f6;
+  background: #eff6ff;
+  border-radius: 8rpx;
+  border: 1rpx solid #93c5fd;
+}
+
+.btn-view-recipe {
+  margin-top: 12rpx;
+  background: #f3f4f6;
+  color: #3b82f6;
+  border: none;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+}
+
+.btn-view-recipe::after {
+  border: none;
 }

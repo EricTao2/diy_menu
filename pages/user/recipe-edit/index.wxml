@@ -1,0 +1,99 @@
+<view class="page">
+  <view class="form">
+    <!-- 菜谱名称 -->
+    <view class="form-item">
+      <text class="form-label required">菜谱名称</text>
+      <input
+        class="form-input"
+        type="text"
+        placeholder="请输入菜谱名称"
+        value="{{name}}"
+        bindinput="onNameInput"
+        maxlength="50"
+      />
+    </view>
+
+    <!-- 封面图 -->
+    <view class="form-item">
+      <text class="form-label">封面图</text>
+      <view class="image-upload" bindtap="onChooseCoverImage">
+        <image
+          wx:if="{{coverImage}}"
+          class="preview-image"
+          src="{{coverImage}}"
+          mode="aspectFill"
+        />
+        <view wx:else class="upload-placeholder">
+          <text class="upload-icon">+</text>
+          <text class="upload-text">{{uploading ? '上传中...' : '点击上传封面图'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 制作说明 -->
+    <view class="form-item">
+      <text class="form-label">制作说明</text>
+      <textarea
+        class="form-textarea"
+        placeholder="请输入制作说明（选填）"
+        value="{{content}}"
+        bindinput="onContentInput"
+        maxlength="500"
+        auto-height
+      />
+    </view>
+
+    <!-- 原材料清单 -->
+    <view class="form-item">
+      <view class="form-label-row">
+        <text class="form-label">原材料清单</text>
+        <button class="add-ingredient-btn" size="mini" bindtap="onAddIngredient">
+          添加原材料
+        </button>
+      </view>
+      
+      <view wx:if="{{ingredients.length === 0}}" class="empty-ingredients">
+        <text class="empty-text">还没有添加原材料</text>
+      </view>
+
+      <view wx:else class="ingredient-list">
+        <view 
+          wx:for="{{ingredients}}" 
+          wx:key="ingredientId"
+          class="ingredient-item"
+        >
+          <image
+            wx:if="{{item.image}}"
+            class="ingredient-image"
+            src="{{item.image}}"
+            mode="aspectFill"
+          />
+          <view class="ingredient-info">
+            <text class="ingredient-name">{{item.name}}</text>
+            <text class="ingredient-amount">{{item.quantity}} {{item.unit}}</text>
+          </view>
+          <button
+            class="remove-btn"
+            size="mini"
+            data-index="{{index}}"
+            bindtap="onRemoveIngredient"
+          >移除</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <view class="footer">
+    <button
+      wx:if="{{isEdit}}"
+      class="btn btn-delete"
+      bindtap="onDelete"
+    >删除菜谱</button>
+    <button
+      class="btn btn-save"
+      loading="{{saving}}"
+      bindtap="onSave"
+    >{{isEdit ? '保存' : '创建'}}</button>
+  </view>
+</view>

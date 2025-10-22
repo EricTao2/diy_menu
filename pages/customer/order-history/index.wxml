@@ -7,16 +7,20 @@
         status-text="{{order.statusText}}"
         show-actions="{{true}}"
         action-text="再次下单"
-        secondary-action-text=""
+        secondary-action-text="{{order.status === 'new' ? '取消订单' : ''}}"
         view-text="查看详情"
         bind:primary="onReorder"
+        bind:secondary="onCancelOrder"
         bind:view="onView"
       ></order-item>
     </block>
   </view>
-  <admin-tabbar
-    tabs="{{customerTabs}}"
-    active-key="customerOrders"
-    bind:change="onTabChange"
-  ></admin-tabbar>
+  <!-- 固定tabbar区域 -->
+  <view class="tabbar-container">
+    <custom-tab-bar
+      tabs="{{customerTabs}}"
+      active-key="customerOrders"
+      bind:change="onTabChange"
+    ></custom-tab-bar>
+  </view>
 </view>

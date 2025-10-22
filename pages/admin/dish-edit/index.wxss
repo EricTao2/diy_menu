@@ -169,3 +169,60 @@
   font-size: 26rpx;
   line-height: 1.5;
 }
+
+/* 菜谱关联 */
+.recipe-empty {
+  padding: 40rpx 0;
+  text-align: center;
+}
+
+.btn-import-recipe {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #ffffff;
+  border: none;
+  border-radius: 12rpx;
+  padding: 20rpx 48rpx;
+  font-size: 28rpx;
+}
+
+.btn-import-recipe::after {
+  border: none;
+}
+
+.recipe-linked {
+  padding: 24rpx 0;
+}
+
+.recipe-info {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.recipe-label {
+  font-size: 26rpx;
+  color: #6b7280;
+}
+
+.recipe-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.recipe-actions {
+  display: flex;
+  gap: 16rpx;
+}
+
+.btn-recipe-action {
+  background: #f3f4f6;
+  color: #3b82f6;
+  border: none;
+  border-radius: 8rpx;
+}
+
+.btn-recipe-action::after {
+  border: none;
+}

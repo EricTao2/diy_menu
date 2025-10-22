@@ -1,0 +1,77 @@
+.menu-scroll-container {
+  width: 100%;
+  height: 100%;
+}
+
+.page-scroll {
+  width: 100%;
+  height: 100%;
+}
+
+.page-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.header-area {
+  width: 100%;
+}
+
+.sentinel {
+  width: 100%;
+  height: 0;
+}
+
+.sentinel--debug {
+  height: 4rpx;
+}
+
+.menu-area {
+  display: flex;
+  width: 100%;
+  background: var(--bg-primary, #ffffff);
+  box-sizing: border-box;
+}
+
+.menu-area--highlight {
+  background: var(--bg-primary, #ffffff);
+}
+
+.menu-area--highlight.menu-area--flush-left {
+  border-left-width: 0;
+}
+
+.menu-area--highlight.menu-area--flush-right {
+  border-right-width: 0;
+}
+
+.category-list {
+  width: auto;
+  flex: 0 0 auto;
+  height: 100%;
+  background: var(--bg-primary, #ffffff);
+  border-right: 0;
+}
+
+.category-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.dish-list {
+  flex: 1;
+  height: 100%;
+  background: var(--bg-primary, #ffffff);
+  border-left: 0;
+}
+
+.dish-list::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}

@@ -8,16 +8,62 @@
     </view>
     <view class="items">
       <block wx:for="{{order.items}}" wx:key="dishId" wx:for-item="item">
-        <view class="item-row">
-          <text class="item-name">{{item.name}} × {{item.quantity}}</text>
-          <text class="item-total">{{item.totalText}}</text>
-        </view>
-        <view class="item-options" wx:if="{{item.options.length}}">
-          <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+        <view class="item-card">
+          <view class="item-image">
+            <image src="{{item.image || '/images/default-dish.png'}}" mode="aspectFill" class="dish-image"></image>
+          </view>
+          <view class="item-content">
+            <view class="item-header">
+              <text class="item-name">{{item.name}}</text>
+              <text wx:if="{{canViewRecipe && item.hasRecipe}}" class="recipe-tag-small">有菜谱</text>
+              <text class="item-quantity">× {{item.quantity}}</text>
+            </view>
+            <view class="item-options" wx:if="{{item.options.length}}">
+              <block wx:for="{{item.options}}" wx:key="label" wx:for-item="option">
+                <text class="option-text">{{option.label}}: {{option.value}}</text>
+              </block>
+            </view>
+            <view class="item-price">
+              <text class="unit-price">¥{{item.unitPrice}}</text>
+              <text class="total-price">小计：¥{{item.totalText}}</text>
+            </view>
+            <button
+              wx:if="{{canViewRecipe && item.hasRecipe}}"
+              class="btn-view-recipe"
+              size="mini"
+              data-recipe-id="{{item.recipeId}}"
+              bindtap="onViewRecipe"
+            >查看菜谱</button>
+          </view>
         </view>
       </block>
     </view>
-    <view class="remarks" wx:if="{{order.remark}}">备注：{{order.remark}}</view>
+    <view class="remarks" wx:if="{{order.remark}}">顾客备注：{{order.remark}}</view>
     <view class="table" wx:if="{{order.tableNo}}">桌号：{{order.tableNo}}</view>
+    <view class="handled-remark" wx:if="{{order.handledRemark}}">处理备注：{{order.handledRemark}}</view>
+    
+    <!-- 操作者信息 -->
+    <view class="operators-section" wx:if="{{order.operators.length}}">
+      <view class="section-title">最近操作者</view>
+      <block wx:for="{{order.operators}}" wx:key="id" wx:for-item="operator">
+        <view class="operator-item">
+          <view class="operator-avatar">
+            <image src="{{operator.avatar || '/images/default-avatar.png'}}" mode="aspectFill" class="avatar-image"></image>
+          </view>
+          <view class="operator-info">
+            <text class="operator-name">{{operator.nickname}}</text>
+            <text class="operator-time" wx:if="{{operator.lastOperatorAtText}}">操作时间：{{operator.lastOperatorAtText}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+    
+    <!-- 总价显示在页面底部 -->
+    <view class="order-total-section">
+      <view class="total-amount">
+        <text class="total-label">订单总价：</text>
+        <text class="total-value">¥{{order.totalPriceText}}</text>
+      </view>
+    </view>
   </view>
 </view>

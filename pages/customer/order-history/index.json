@@ -1,6 +1,6 @@
 {
   "usingComponents": {
     "order-item": "/components/order-item/index",
-    "admin-tabbar": "/custom-tab-bar/index"
+    "custom-tab-bar": "/custom-tab-bar/index"
   }
 }

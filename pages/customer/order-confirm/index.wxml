@@ -3,31 +3,47 @@
     <view class="section-title">确认订单</view>
     <block wx:for="{{itemsView}}" wx:key="dishId" wx:for-item="item">
       <view class="order-item">
-        <view class="item-header">
-          <text class="item-name">{{item.name}} × {{item.quantity}}</text>
-          <text class="item-price">{{item.totalText}}</text>
-        </view>
-        <view class="item-options" wx:if="{{item.options.length}}">
-          <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+        <view class="item-content">
+          <view class="item-image">
+            <image
+              wx:if="{{item.image}}"
+              class="dish-image"
+              src="{{item.image}}"
+              mode="aspectFill"
+            ></image>
+            <view wx:else class="dish-image dish-image--placeholder">菜品</view>
+          </view>
+          <view class="item-details">
+            <view class="item-header">
+              <text class="item-name">{{item.name}}</text>
+              <text class="item-price">{{item.totalText}}</text>
+            </view>
+            <view class="item-quantity">数量: {{item.quantity}}</view>
+            <view class="item-options" wx:if="{{item.options.length}}">
+              <text wx:for="{{item.options}}" wx:key="label" class="option-item">{{item.label}}</text>
+            </view>
+          </view>
         </view>
       </view>
     </block>
     <view class="form-field">
       <label>备注</label>
-      <textarea value="{{form.remark}}" data-field="remark" bindinput="onInput"></textarea>
+      <textarea class="remark-textarea" value="{{form.remark}}" data-field="remark" bindinput="onInput"></textarea>
     </view>
     <view class="form-field">
       <label>桌号</label>
       <input value="{{form.tableNo}}" data-field="tableNo" bindinput="onInput" />
     </view>
-    <view class="form-field">
-      <label>取餐方式</label>
-      <radio-group value="{{form.pickupType}}" bindchange="onPickupChange">
-        <label class="radio-item"><radio value="dine-in" checked="{{form.pickupType === 'dine-in'}}" />堂食</label>
-        <label class="radio-item"><radio value="takeaway" checked="{{form.pickupType === 'takeaway'}}" />外带</label>
-      </radio-group>
+  </view>
+  
+  <!-- 固定在底部的下单bar -->
+  <view class="fixed-bottom">
+    <view class="bottom-bar">
+      <view class="total-section">
+        <text class="total-label">合计</text>
+        <text class="total-amount">{{totalText}}</text>
+      </view>
+      <button class="submit-btn" loading="{{submitting}}" bindtap="onSubmit">下单</button>
     </view>
-    <view class="total">{{totalText}}</view>
-    <button class="primary" loading="{{submitting}}" bindtap="onSubmit">提交</button>
   </view>
 </view>

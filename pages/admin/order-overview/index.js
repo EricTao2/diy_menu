@@ -15,7 +15,7 @@ const mapStoreToData = (state) => ({
 
 const STATUS_SEQUENCE = ['new', 'processing', 'completed', 'cancelled'];
 const STATUS_LABELS = {
-  new: '新订单',
+  new: '已下单',
   processing: '处理中',
   completed: '已完成',
   cancelled: '已取消',

@@ -64,10 +64,13 @@ createPage({
         index,
         priceText: formatCurrency(item.priceSnapshot),
         totalText: formatCurrency(item.priceSnapshot * item.quantity),
-        options: item.optionsSnapshot ? Object.keys(item.optionsSnapshot).map((key) => ({
-          label: key,
-          value: item.optionsSnapshot[key],
-        })) : [],
+        options: item.optionsSnapshot ? Object.keys(item.optionsSnapshot).map((optionId) => {
+          const option = item.optionsSnapshot[optionId];
+          return {
+            label: `${option.name}: ${option.selectedLabel}`,
+            value: option.selectedValue,
+          };
+        }) : [],
       }));
       const total = cart.items.reduce(
         (sum, item) => sum + (item.priceSnapshot || 0) * (item.quantity || 0),

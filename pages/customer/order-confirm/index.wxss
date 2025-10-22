@@ -8,24 +8,187 @@
   box-shadow: 0 6rpx 16rpx rgba(15, 23, 42, 0.06);
 }
 
+.item-content {
+  display: flex;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.item-image {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dish-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 12rpx;
+  object-fit: cover;
+}
+
+.dish-image--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(226, 232, 240, 0.65), rgba(248, 250, 252, 0.85));
+  font-size: 24rpx;
+  color: rgba(15, 23, 42, 0.4);
+}
+
+.item-details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
 .item-header {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 16rpx;
+}
+
+.item-name {
   font-size: 30rpx;
   font-weight: 600;
+  color: var(--text-color);
+  flex: 1;
+  min-width: 0;
+}
+
+.item-price {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #ef4444;
+  flex-shrink: 0;
+}
+
+.item-quantity {
+  font-size: 24rpx;
+  color: var(--subtext-color);
 }
 
 .item-options {
-  margin-top: 12rpx;
+  margin-top: 8rpx;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.option-item {
+  font-size: 22rpx;
   color: var(--subtext-color);
+  background: rgba(15, 23, 42, 0.06);
+  padding: 4rpx 8rpx;
+  border-radius: 6rpx;
 }
 
 .radio-item {
   margin-right: 24rpx;
 }
 
-.total {
-  font-size: 36rpx;
+/* 备注输入框高度缩小一半 */
+.remark-textarea {
+  height: 60rpx !important;
+  min-height: 60rpx !important;
+}
+
+/* 为固定按钮留出空间 */
+.container {
+  padding-bottom: 120rpx;
+}
+
+/* 固定在底部的下单bar */
+.fixed-bottom {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  padding: 28rpx 32rpx;
+  border-top: 1rpx solid #e2e8f0;
+  z-index: 100;
+  box-shadow: 0 -12rpx 40rpx rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(20rpx);
+}
+
+.bottom-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.total-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+.total-label {
+  font-size: 24rpx;
+  color: #64748b;
+  margin-bottom: 4rpx;
+}
+
+.total-amount {
+  font-size: 40rpx;
+  font-weight: 800;
+  color: #dc2626;
+  text-shadow: 0 2rpx 4rpx rgba(220, 38, 38, 0.2);
+  letter-spacing: 1rpx;
+}
+
+.submit-btn {
+  height: 88rpx;
+  min-width: 200rpx;
+  border-radius: 44rpx;
+  font-size: 32rpx;
   font-weight: 700;
-  margin: 24rpx 0;
+  background: linear-gradient(135deg, #569be9, #3f4de8);
+  color: white;
+  border: none;
+  padding: 0 48rpx;
+  box-shadow: 0 8rpx 24rpx rgba(38, 29, 203, 0.3);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 1rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transition: left 0.5s;
+}
+
+.submit-btn:active {
+  background: linear-gradient(135deg, #3f4de8, #2d1b69);
+  box-shadow: 0 4rpx 16rpx rgba(38, 29, 203, 0.4);
+  transform: translateY(2rpx);
+}
+
+.submit-btn:active::before {
+  left: 100%;
 }

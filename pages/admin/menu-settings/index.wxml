@@ -27,6 +27,47 @@
             placeholder="用于介绍菜单定位、特色等"
           ></textarea>
         </view>
+        <view class="form-field cover-field">
+          <label>菜单主图</label>
+          <view class="cover-wrapper">
+            <view
+              class="cover-preview {{form.coverImage ? 'cover-preview--filled' : ''}}"
+              bindtap="onPreviewCover"
+            >
+              <image
+                wx:if="{{form.coverImage}}"
+                src="{{form.coverImage}}"
+                mode="aspectFill"
+              ></image>
+              <view wx:else class="cover-placeholder">推荐尺寸 750×400，点击可预览</view>
+            </view>
+            <view class="cover-actions">
+              <button
+                class="pill-btn"
+                size="mini"
+                loading="{{coverUploading}}"
+                bindtap="onChooseCover"
+              >
+                上传图片
+              </button>
+              <button
+                class="pill-btn ghost"
+                size="mini"
+                bindtap="onClearCover"
+                wx:if="{{form.coverImage}}"
+              >
+                清除
+              </button>
+            </view>
+          </view>
+          <input
+            class="cover-input"
+            value="{{form.coverImage}}"
+            data-field="coverImage"
+            bindinput="onInput"
+            placeholder="可粘贴图片链接或云存储 fileID"
+          />
+        </view>
       </view>
       <view class="card section-card">
         <view class="section-header">
@@ -181,5 +222,9 @@
       </view>
     </view>
   </scroll-view>
-  <admin-tabbar active-key="menuSettings" bind:change="onTabChange"></admin-tabbar>
+  
+  <!-- 固定tabbar区域 -->
+  <view class="tabbar-container">
+    <admin-tabbar active-key="menuSettings" bind:change="onTabChange"></admin-tabbar>
+  </view>
 </view>

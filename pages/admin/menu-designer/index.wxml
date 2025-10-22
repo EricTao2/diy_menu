@@ -1,195 +1,173 @@
-<view class="page {{themeClass}} {{isPinned ? 'page--pinned' : ''}}">
-  <page-meta page-style="{{pageStyle}}"></page-meta>
-  <view class="page-content">
-    <view class="page-inner with-tabbar {{transitionClass}}">
-      <view class="loading" wx:if="{{loading}}">加载中</view>
-      <block wx:else>
-        <view class="designer-actions">
-          <button class="icon-btn designer-action-btn" size="mini" bindtap="onBackToMenuSelector">菜单选择</button>
+<view class="page {{themeClass}}">
+  <!-- 业务区域 -->
+  <view class="container">
+    <view class="loading" wx:if="{{loading}}">加载中...</view>
+    
+    <menu-scroll-container 
+      id="menuScroll"
+      wx:else
+      tabbar-height="{{120}}"
+      sentinel-offset="{{sentinelOffset}}"
+      debug-sentinel="{{debugSentinel}}"
+      container-padding="{{0}}"
+      highlight-boundary="{{true}}"
+      flush-left="{{true}}"
+      flush-right="{{true}}"
+      height-offset="{{10}}"
+      category-width="{{180}}"
+      bind:lockchange="onLockChange"
+      bind:dishscroll="onDishPanelScroll"
+      bind:pagescroll="onPagePanelScroll"
+    >
+      <!-- 插槽1: 顶部菜单信息 -->
+      <view slot="header">
+        <!-- 功能按钮栏 -->
+        <view class="toolbar">
+          <button class="toolbar__btn" size="mini" bindtap="onBackToMenuSelector">菜单选择</button>
           <button
             wx:if="{{showRoleSwitch}}"
-            class="icon-btn designer-action-btn"
+            class="toolbar__btn"
             size="mini"
             bindtap="onShowRoleSwitcher"
-          >角色切换</button>
-          <button class="icon-btn designer-action-btn" size="mini" bindtap="onAddDish">新增菜品</button>
+          >
+            角色切换
+          </button>
+          <button class="toolbar__btn toolbar__btn--primary" size="mini" bindtap="onAddDish">新增菜品</button>
         </view>
 
-        <view class="menu-hero">
-          <view class="menu-hero__media">
+        <!-- 菜单主图和描述 -->
+        <view class="hero-card">
+          <view class="hero-card__media">
             <image
               wx:if="{{heroImage}}"
-              class="menu-hero__image"
+              class="hero-card__image"
               src="{{heroImage}}"
               mode="aspectFill"
             ></image>
-            <view wx:else class="menu-hero__placeholder">
-              <text class="menu-hero__placeholder-icon">MENU</text>
-            </view>
+            <view wx:else class="hero-card__placeholder">MENU</view>
           </view>
-          <view class="menu-hero__info">
-            <view class="menu-hero__text">
-              <text class="menu-hero__title">{{heroTitle}}</text>
-              <text class="menu-hero__desc" wx:if="{{heroSubtitle}}">{{heroSubtitle}}</text>
-            </view>
+          <view class="hero-card__text">
+            <text class="hero-card__title">{{heroTitle}}</text>
+            <text class="hero-card__desc" wx:if="{{heroDescription}}">{{heroDescription}}</text>
           </view>
         </view>
 
+        <!-- 状态筛选 -->
         <view class="status-tabs">
           <block wx:for="{{statusFilters}}" wx:key="key" wx:for-item="item">
             <view
-              class="status-tab {{item.key === activeStatusFilter ? 'active' : ''}}"
+              class="status-tab {{item.key === activeStatusFilter ? 'status-tab--active' : ''}}"
               data-key="{{item.key}}"
               bindtap="onSelectStatusFilter"
             >
-              <text class="status-label">{{item.label}}</text>
-              <text class="status-count">{{statusCounts[item.key] || 0}}</text>
+              <text class="status-tab__label">{{item.label}}</text>
+              <text class="status-tab__count">{{statusCounts[item.key] || 0}}</text>
             </view>
           </block>
         </view>
+      </view>
 
-        <view id="sentinel" class="designer-sentinel"></view>
-        <view
-          id="menuStickyRoot"
-          class="designer-sticky-root"
-          
-        >
+      <!-- 插槽2: 左侧分类列表 -->
+      <view slot="categories">
+        <block wx:for="{{categories}}" wx:key="id" wx:for-item="category">
           <view
-            id="designerLayout"
-            class="designer-layout"
-            style="{{columnsViewportHeight > 0 ? 'height:' + columnsViewportHeight + 'px;' : ''}}"
+            class="category-item {{category.id === activeCategoryId ? 'category-item--active' : ''}}"
+            bindtap="onSelectCategory"
+            id="category-item-{{category.id}}"
+            data-id="{{category.id}}"
           >
-            <view class="category-column">
-              <view class="category-header">
-                <text class="category-title">菜品分类</text>
-              </view>
-              <scroll-view
-                id="leftScroll"
-                scroll-y="{{innerScrollEnabled}}"
-                scroll-top="{{leftScrollTop === null ? '' : leftScrollTop}}"
-                scroll-with-animation="true"
-                show-scrollbar="false"
-                class="category-scroll"
-                bindscroll="onLeftScroll"
-                bindtouchstart="onColumnTouchStart"
-                bindtouchmove="onColumnTouchMove"
-                bindtouchend="onColumnTouchEnd"
-                bindtouchcancel="onColumnTouchEnd"
-                data-column="left"
-              >
-                <block wx:for="{{categories}}" wx:key="id" wx:for-item="category" wx:for-index="index">
-                  <view
-                    class="category-item {{category.id === activeCategoryId ? 'active' : ''}} {{category.id === draggingCategoryId ? 'dragging' : ''}}"
-                    data-id="{{category.id}}"
-                    data-index="{{index}}"
-                    bindtap="onSelectCategory"
-                  >
-                    <text class="category-name">{{category.name}}</text>
-                    <view
-                      class="category-handle"
-                      data-id="{{category.id}}"
-                      data-index="{{index}}"
-                      catchtap="noop"
-                      catchtouchstart="onCategoryTouchStart"
-                      catchtouchmove="onCategoryTouchMove"
-                      catchtouchend="onCategoryTouchEnd"
-                      catchtouchcancel="onCategoryTouchEnd"
-                    >
-                      <view class="category-handle__bar"></view>
-                      <view class="category-handle__bar"></view>
-                      <view class="category-handle__bar"></view>
-                    </view>
-                  </view>
-                </block>
-              </scroll-view>
-            </view>
-            <view class="dish-column">
-              <scroll-view
-                id="rightScroll"
-                scroll-y="{{innerScrollEnabled}}"
-                scroll-top="{{rightScrollTop === null ? '' : rightScrollTop}}"
-                scroll-with-animation="true"
-                show-scrollbar="false"
-                class="dish-scroll"
-                scroll-into-view="{{rightIntoView || scrollIntoCategoryId}}"
-                bindscroll="onRightScroll"
-                bindtouchstart="onColumnTouchStart"
-                bindtouchmove="onColumnTouchMove"
-                bindtouchend="onColumnTouchEnd"
-                bindtouchcancel="onColumnTouchEnd"
-                data-column="right"
-              >
-                <view wx:if="{{displayDishGroups.length}}" class="dish-groups">
-                  <block wx:for="{{displayDishGroups}}" wx:key="categoryId" wx:for-item="group">
-                    <view class="dish-group" id="category-{{group.categoryId}}">
-                      <view class="dish-group__header">
-                        <text class="dish-group__title">{{group.categoryName}}</text>
-                        <text class="dish-group__count" wx:if="{{group.dishes.length}}">{{group.dishes.length}} 道菜</text>
+            <text class="category-item__name">{{category.name}}</text>
+          </view>
+        </block>
+        <view class="scroll-spacer scroll-spacer--category"></view>
+      </view>
+
+      <!-- 插槽3: 右侧菜品列表 -->
+      <view slot="dishes">
+        <block wx:if="{{dishGroups.length}}">
+          <view class="dish-groups">
+            <block wx:for="{{dishGroups}}" wx:key="categoryId" wx:for-item="group">
+              <view class="dish-group" id="dish-group-{{group.categoryId}}" data-id="{{group.categoryId}}">
+                <!-- 分类标题 -->
+                <view class="dish-group__header">
+                  <text class="dish-group__title">{{group.categoryName}}</text>
+                </view>
+                
+                <!-- 空状态 -->
+                <view class="dish-group__empty" wx:if="{{!group.dishes.length}}">
+                  该分类暂时没有菜品
+                </view>
+                
+                <!-- 菜品列表 -->
+                <view class="dish-list" wx:if="{{group.dishes.length}}">
+                  <block wx:for="{{group.dishes}}" wx:key="id" wx:for-item="dish">
+                    <view class="dish-card {{dish.id === draggingDishId ? 'dish-card--dragging' : ''}}">
+                      <!-- 菜品图片 -->
+                      <view class="dish-card__media">
+                        <image
+                          wx:if="{{dish.image}}"
+                          class="dish-card__cover"
+                          src="{{dish.image}}"
+                          mode="aspectFill"
+                        ></image>
+                        <view wx:else class="dish-card__cover dish-card__cover--placeholder">菜品</view>
                       </view>
-                      <view class="dish-group__empty" wx:if="{{!group.dishes.length}}">该分类暂时没有菜品</view>
-                      <view class="dish-list" wx:if="{{group.dishes.length}}">
-                        <block wx:for="{{group.dishes}}" wx:key="id" wx:for-item="dish">
-                          <view
-                            class="dish-card {{dish.id === draggingDishId ? 'dragging' : ''}}"
-                            data-id="{{dish.id}}"
-                            data-category-id="{{group.categoryId}}"
-                            data-raw-index="{{dish.__rawIndex}}"
-                          >
-                            <image class="dish-cover" src="{{dish.image}}" mode="aspectFill"></image>
-                            <view class="dish-content">
-                              <view class="dish-header">
-                                <text class="dish-name">{{dish.name}}</text>
-                              </view>
-                              <text class="dish-price">{{dish.priceText}}</text>
-                              <text class="dish-desc" wx:if="{{dish.description}}">{{dish.description}}</text>
-                              <view class="dish-stats">
-                                <text>月售 {{dish.monthlySales || 0}}</text>
-                              </view>
-                            </view>
-                            <view class="dish-actions">
-                              <view class="dish-actions__column">
-                                <view
-                                  class="dish-handle-button"
-                                  data-id="{{dish.id}}"
-                                  data-category-id="{{group.categoryId}}"
-                                  data-raw-index="{{dish.__rawIndex}}"
-                                  catchtap="noop"
-                                  catchtouchstart="onDishTouchStart"
-                                  catchtouchmove="onDishTouchMove"
-                                  catchtouchend="onDishTouchEnd"
-                                  catchtouchcancel="onDishTouchEnd"
-                                >
-                                  <view class="dish-handle-icon">
-                                    <view class="dish-handle__bar"></view>
-                                    <view class="dish-handle__bar"></view>
-                                    <view class="dish-handle__bar"></view>
-                                  </view>
-                                </view>
-                                <view
-                                  class="icon-button edit-button"
-                                  data-id="{{dish.id}}"
-                                  catchtap="onEditDish"
-                                  role="button"
-                                  hover-class="icon-button--active"
-                                >
-                                  <image class="edit-icon" src="{{editIcon}}" mode="aspectFill" />
-                                  <text class="sr-only">编辑</text>
-                                </view>
-                              </view>
-                            </view>
-                          </view>
-                        </block>
+                      
+                      <!-- 菜品信息 -->
+                      <view class="dish-card__content">
+                        <view class="dish-card__header">
+                          <text class="dish-card__name">{{dish.name}}</text>
+                          <text class="dish-card__recipe" wx:if="{{dish.recipeId}}">📖 有菜谱</text>
+                        </view>
+                        <text class="dish-card__price">{{dish.priceText}}</text>
+                        <text class="dish-card__desc" wx:if="{{dish.description}}">{{dish.description}}</text>
+                      </view>
+                      
+                      <!-- 操作按钮 -->
+                      <view class="dish-card__actions">
+                        <view
+                          class="dish-card__icon-btn"
+                          data-id="{{dish.id}}"
+                          bindtap="onEditDish"
+                          hover-class="dish-card__icon-btn--active"
+                        >
+                          <image
+                            class="dish-card__icon-image"
+                            src="/style/icons/edit.svg"
+                            mode="aspectFit"
+                          ></image>
+                        </view>
+                        <view
+                          class="dish-card__handle"
+                          data-id="{{dish.id}}"
+                          data-category-id="{{group.categoryId}}"
+                          data-raw-index="{{dish.rawIndex}}"
+                          catchtap="noop"
+                          catchtouchstart="onDishHandleTouchStart"
+                          catchtouchmove="onDishHandleTouchMove"
+                          catchtouchend="onDishHandleTouchEnd"
+                          catchtouchcancel="onDishHandleTouchEnd"
+                        >
+                          <view class="handle-bar"></view>
+                          <view class="handle-bar"></view>
+                          <view class="handle-bar"></view>
+                        </view>
                       </view>
                     </view>
                   </block>
                 </view>
-                <view wx:else class="empty">暂无符合条件的菜品</view>
-              </scroll-view>
-            </view>
+              </view>
+            </block>
           </view>
-        </view>
-      </block>
-    </view>
+          <view class="scroll-spacer scroll-spacer--dishes"></view>
+        </block>
+        <view class="empty" wx:else>暂无符合条件的菜品</view>
+      </view>
+    </menu-scroll-container>
   </view>
-  <admin-tabbar id="adminTabbar" active-key="menuDesigner" bind:change="onTabChange"></admin-tabbar>
+
+  <!-- 固定 Tabbar -->
+  <view class="tabbar-container">
+    <admin-tabbar active-key="menuDesigner" bind:change="onTabChange"></admin-tabbar>
+  </view>
 </view>

@@ -57,6 +57,35 @@
         </view>
       </view>
 
+      <!-- 菜谱关联 -->
+      <view class="card section-card">
+        <view class="section-header">
+          <text class="section-title">关联菜谱</text>
+          <text class="section-desc">从菜谱库导入菜品信息</text>
+        </view>
+        
+        <view wx:if="{{!form.recipeId}}" class="recipe-empty">
+          <button class="btn-import-recipe" bindtap="onSelectRecipe">
+            从菜谱导入
+          </button>
+        </view>
+        
+        <view wx:else class="recipe-linked">
+          <view class="recipe-info">
+            <text class="recipe-label">已关联菜谱：</text>
+            <text class="recipe-name">{{recipe ? recipe.name : '加载中...'}}</text>
+          </view>
+          <view class="recipe-actions">
+            <button class="btn-recipe-action" size="mini" bindtap="onViewRecipe">
+              查看菜谱
+            </button>
+            <button class="btn-recipe-action" size="mini" bindtap="onChangeRecipe">
+              更换菜谱
+            </button>
+          </view>
+        </view>
+      </view>
+
       <view class="card section-card">
         <view class="section-header">
           <text class="section-title">自定义选项</text>

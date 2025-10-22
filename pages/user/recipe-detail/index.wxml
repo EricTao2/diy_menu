@@ -1,0 +1,70 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:elif="{{recipe}}" class="content">
+    <!-- 封面图 -->
+    <image
+      wx:if="{{recipe.coverImage}}"
+      class="cover-image"
+      src="{{recipe.coverImage}}"
+      mode="aspectFill"
+    />
+
+    <!-- 菜谱信息 -->
+    <view class="info-card">
+      <text class="recipe-title">{{recipe.name}}</text>
+      
+      <!-- 创建者信息 -->
+      <view wx:if="{{recipe.creator}}" class="creator-info">
+        <image
+          class="creator-avatar"
+          src="{{recipe.creator.avatar || 'https://dummyimage.com/80x80/e5e7eb/9ca3af&text=U'}}"
+          mode="aspectFill"
+        />
+        <text class="creator-name">{{recipe.creator.nickname}}</text>
+      </view>
+    </view>
+
+    <!-- 制作说明 -->
+    <view wx:if="{{recipe.content}}" class="section-card">
+      <text class="section-title">制作说明</text>
+      <text class="content-text">{{recipe.content}}</text>
+    </view>
+
+    <!-- 原材料清单 -->
+    <view wx:if="{{aggregatedIngredients.length > 0}}" class="section-card">
+      <text class="section-title">原材料清单</text>
+      <view class="ingredients-list">
+        <view
+          wx:for="{{aggregatedIngredients}}"
+          wx:key="name"
+          class="ingredient-group"
+        >
+          <view class="ingredient-header">
+            <image
+              wx:if="{{item.image}}"
+              class="ingredient-image"
+              src="{{item.image}}"
+              mode="aspectFill"
+            />
+            <text class="ingredient-name">{{item.name}}</text>
+          </view>
+          <view class="ingredient-amounts">
+            <text
+              wx:for="{{item.amounts}}"
+              wx:for-item="amount"
+              wx:key="unit"
+              class="amount-item"
+            >{{amount.quantity}} {{amount.unit}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 编辑和删除按钮（仅创建者可见） -->
+  <view wx:if="{{isOwner}}" class="footer">
+    <button class="btn btn-delete" bindtap="onDelete">删除菜谱</button>
+    <button class="btn btn-edit" bindtap="onEdit">编辑菜谱</button>
+  </view>
+</view>

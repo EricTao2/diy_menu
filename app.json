@@ -1,6 +1,12 @@
 {
   "pages": [
     "pages/menu-selector/index",
+    "pages/user/profile/index",
+    "pages/user/recipe-edit/index",
+    "pages/user/recipe-detail/index",
+    "pages/user/ingredient-edit/index",
+    "pages/user/ingredient-select/index",
+    "pages/user/recipe-select/index",
     "pages/admin/menu-settings/index",
     "pages/admin/category-list/index",
     "pages/admin/dish-list/index",
@@ -13,6 +19,7 @@
     "pages/customer/cart/index",
     "pages/customer/order-confirm/index",
     "pages/customer/order-history/index",
+    "pages/customer/notifications/index",
     "pages/chef/order-list/index",
     "pages/chef/order-detail/index",
     "pages/common/order-detail/index"

@@ -13,6 +13,10 @@ Component({
       type: Array,
       value: ADMIN_BOTTOM_TABS,
     },
+    unreadCount: {
+      type: Number,
+      value: 0,
+    },
   },
   methods: {
     onSelect(event) {

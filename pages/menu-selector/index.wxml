@@ -2,16 +2,21 @@
   <view class="page-header">
     <view class="header-content">
       <view class="user-section">
-        <image
-          class="user-avatar"
-          mode="aspectFill"
-          src="{{user && user.avatar ? user.avatar : 'https://dummyimage.com/160x160/e5e7eb/9ca3af&text=U'}}"
-        ></image>
-        <view class="user-info">
-          <text class="user-nickname">{{user && user.nickname ? user.nickname : '未命名用户'}}</text>
-          <text class="user-subtitle">欢迎使用 DIY 菜单</text>
+        <view class="user-header">
+          <image
+            class="user-avatar"
+            mode="aspectFill"
+            src="{{user && user.avatar ? user.avatar : 'https://dummyimage.com/160x160/e5e7eb/9ca3af&text=U'}}"
+          ></image>
+          <view class="user-info">
+            <text class="user-nickname">{{user && user.nickname ? user.nickname : '未命名用户'}}</text>
+            <text class="user-subtitle">欢迎使用 DIY 菜单</text>
+          </view>
         </view>
-        <button class="user-edit" bindtap="onEditProfile">编辑</button>
+        <view class="user-actions">
+          <button class="user-action-btn" bindtap="onEditProfile">编辑资料</button>
+          <button class="user-action-btn" bindtap="onGoToProfile">个人中心</button>
+        </view>
       </view>
     </view>
   </view>
@@ -60,9 +65,9 @@
         <view wx:if="{{menus.length}}" class="menu-scroll-mask menu-scroll-mask--bottom"></view>
       </view>
     </view>
-  </view>
-  <view class="page-footer">
-    <button class="primary enter" bindtap="onEnter">进入菜单</button>
+    <view class="page-footer">
+      <button class="enter" bindtap="onEnter">进入菜单</button>
+    </view>
   </view>
   <view
     wx:if="{{showProfileSetup}}"

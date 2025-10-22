@@ -37,18 +37,8 @@ const CUSTOMER_TAB_URL_MAP = CUSTOMER_BOTTOM_TABS.reduce((acc, tab) => {
   return acc;
 }, {});
 
-const MENU_COLUMN_MIN_HEIGHT_RPX = 520;
-const SCROLL_UNLOCK_THRESHOLD = 16;
-const FLOATING_BUTTON_HEIGHT_RPX = 0;
-const COLUMN_UNLOCK_THRESHOLD = 4;
-const LOCK_CONTAINER_VERTICAL_PADDING_RPX = 100;
-const ADMIN_TABBAR_HEIGHT_RPX = 160;
-const GESTURE_DEADZONE = 6;
-const BRIDGE_SCROLL_INTERVAL = 18;
-const RIGHT_GROUP_ANCHOR_OFFSET_RPX = 40;
-const PIN_TRIGGER_OFFSET_RPX = 200;
-
 const normalizePrice = (value) => Number(value || 0);
+const ANCHOR_BOTTOM_OFFSET = 80;
 
 createPage({
   data: {
@@ -59,15 +49,9 @@ createPage({
     activeCategoryId: '',
     optionsMap: {},
     customerTabs: CUSTOMER_BOTTOM_TABS,
-    isPinned: false,
-    pageStyle: '',
-    catalogStyle: '',
-    catalogViewportHeight: 0,
-    innerScrollEnabled: false,
-    leftScrollTop: null,
-    rightScrollTop: null,
-    rightIntoView: '',
     cart: null,
+    flyDots: [],
+    cartDishCountMap: {},
     cartSummary: {
       itemCount: 0,
       totalPrice: 0,
@@ -84,15 +68,12 @@ createPage({
     heroImage: '',
     heroTitle: '',
     heroDescription: '',
-    stickyPaddingBottom: 0,
-    stickyPinnedPaddingBottom: 0,
+    sentinelOffset: 0,
+    debugSentinel: false,
+    categoryListWidth: 180,
+    isMenuLocked: false,
   },
   mapStoreToData,
-  onPageScroll(event) {
-    if (typeof this.handlePageScroll === 'function') {
-      this.handlePageScroll(event || {});
-    }
-  },
   async onLoad() {
     await this.initPage();
   },
@@ -106,17 +87,17 @@ createPage({
     }
   },
   onUnload() {
-    if (this.sentinelObserver) {
-      this.sentinelObserver.disconnect();
-      this.sentinelObserver = null;
+    if (this._prepareAnchorsTimer) {
+      clearTimeout(this._prepareAnchorsTimer);
+      this._prepareAnchorsTimer = null;
     }
-    if (this.layoutTimer) {
-      clearTimeout(this.layoutTimer);
-      this.layoutTimer = null;
-    }
-    if (this.bridgeThrottleTimer) {
-      clearTimeout(this.bridgeThrottleTimer);
-      this.bridgeThrottleTimer = null;
+    if (this.flyDotTimers) {
+      Object.values(this.flyDotTimers).forEach((timer) => {
+        if (timer) {
+          clearTimeout(timer);
+        }
+      });
+      this.flyDotTimers = null;
     }
   },
   methods: {
@@ -130,24 +111,21 @@ createPage({
         wx.redirectTo({ url: '/pages/menu-selector/index' });
         return;
       }
-      this.pageScrollTop = 0;
-      this.skipNextRefresh = true;
+
       this.hasLoaded = false;
-      this.systemInfo = this.getSystemInfo();
-      this.isSentinelVisible = true;
-      this.pinTriggerScrollTop = 0;
-      this.suspendPinLock = false;
-      this.bridgeActive = false;
-      this.bridgePane = '';
-      this.bridgeStartTouchY = 0;
-      this.bridgeStartPageTop = 0;
-      this.pendingBridgeTarget = null;
-      this.bridgeThrottleTimer = null;
-      this.activeTouch = null;
-      this.tabbarHeightPx = 0;
-      this.updateStickyPaddingValues();
+      this.skipNextRefresh = true;
+      this.currentPageScrollTop = 0;
+      this.currentDishScrollTop = 0;
+      this.pendingOptionAnimation = null;
+      this.flyDotTimers = {};
+      this.lockedAnchors = [];
+      this.pageAnchors = [];
+      this.lockedViewportHeight = 0;
+      this.pageViewportHeight = 0;
+      this._manualCategoryScroll = null;
+      this._prepareAnchorsTimer = null;
+
       await this.loadMenuData();
-      this.setupSentinelObserver();
       this.hasLoaded = true;
     },
     async loadMenuData() {
@@ -213,7 +191,7 @@ createPage({
           heroDescription,
         },
         () => {
-          this.measureDishGroups();
+          this.prepareMenuAnchors();
           this.updateCartSummary();
         }
       );
@@ -227,16 +205,22 @@ createPage({
             totalPrice: 0,
             totalText: '0.00',
           },
+          cartDishCountMap: {},
         });
         return;
       }
       let itemCount = 0;
       let totalPrice = 0;
+      const dishCountMap = {};
       (cart.items || []).forEach((item) => {
         const quantity = Number(item.quantity || 0);
         const unitPrice = normalizePrice(item.priceSnapshot);
         itemCount += quantity;
         totalPrice += unitPrice * quantity;
+        if (item.dishId && quantity > 0) {
+          const key = String(item.dishId);
+          dishCountMap[key] = (dishCountMap[key] || 0) + quantity;
+        }
       });
       this.setData({
         cartSummary: {
@@ -244,263 +228,272 @@ createPage({
           totalPrice,
           totalText: formatCurrency(totalPrice),
         },
+        cartDishCountMap: dishCountMap,
       });
-    },
-    measureDishGroups() {
-      wx.nextTick(() => {
-        const query = wx.createSelectorQuery().in(this);
-        query
-          .selectAll('.dish-group')
-          .boundingClientRect((rects) => {
-            if (!rects || !rects.length) {
-              this.groupOffsets = [];
-              return;
-            }
-            let offset = 0;
-            this.groupOffsets = rects.map((rect, index) => {
-              const group = this.data.dishGroups[index];
-              const start = offset;
-              offset += rect.height;
-              return {
-                id: group?.categoryId || '',
-                start,
-                end: offset,
-              };
-            });
-          })
-          .exec();
-      });
-    },
-    getSystemInfo() {
-      if (this.systemInfoCache) return this.systemInfoCache;
-      const info = wx.getSystemInfoSync();
-      const safeBottom =
-        info.safeArea && typeof info.safeArea.bottom === 'number'
-          ? Math.max(info.windowHeight - info.safeArea.bottom, 0)
-          : 0;
-      this.systemInfoCache = {
-        windowHeight: info.windowHeight,
-        windowWidth: info.windowWidth,
-        safeBottom,
-        rpxRatio: info.windowWidth ? info.windowWidth / 750 : 1,
-      };
-      return this.systemInfoCache;
-    },
-    rpxToPx(value) {
-      const info = this.systemInfo || this.getSystemInfo();
-      return value * (info.rpxRatio || 1);
-    },
-    getBottomPaddingPx() {
-      const info = this.systemInfo || this.getSystemInfo();
-      const buttonHeight = this.rpxToPx(FLOATING_BUTTON_HEIGHT_RPX);
-      return info.safeBottom + buttonHeight;
-    },
-    updateStickyPaddingValues() {
-      const safeArea = this.systemInfo && typeof this.systemInfo.safeBottom === 'number' ? this.systemInfo.safeBottom : 0;
-      const baseTabHeight =
-        typeof this.tabbarHeightPx === 'number' && this.tabbarHeightPx > 0
-          ? this.tabbarHeightPx
-          : this.rpxToPx(ADMIN_TABBAR_HEIGHT_RPX);
-      const extraPadding = this.rpxToPx(LOCK_CONTAINER_VERTICAL_PADDING_RPX);
-      const stickyPaddingBottom = Math.max(baseTabHeight + safeArea + extraPadding, 0);
-      const stickyPinnedPaddingBottom = Math.max(safeArea, 0);
-      if (
-        stickyPaddingBottom !== this.data.stickyPaddingBottom ||
-        stickyPinnedPaddingBottom !== this.data.stickyPinnedPaddingBottom
-      ) {
-        this.setData({
-          stickyPaddingBottom,
-          stickyPinnedPaddingBottom,
-        });
-      }
-    },
-    setupSentinelObserver() {
-      if (this.sentinelObserver) {
-        return;
-      }
-      try {
-        const observer = wx.createIntersectionObserver(this, {
-          thresholds: [0, 0.01, 0.2, 0.5],
-        });
-        observer.relativeToViewport({ top: 0 }).observe('#customerMenuSentinel', (res) => {
-          this.handleSentinelIntersection(res);
-        });
-        this.sentinelObserver = observer;
-      } catch (error) {
-        console.warn('顾客端 IntersectionObserver 创建失败', error);
-      }
-    },
-    handleSentinelIntersection(res) {
-      if (!res) {
-        return;
-      }
-      const isVisible = res.intersectionRatio > 0 && res.boundingClientRect.top >= 0;
-      this.isSentinelVisible = isVisible;
-      if (isVisible) {
-        // 只有在非锁定状态下才允许解锁
-        if (!this.data.isPinned) {
-          this.suspendPinLock = false;
-          if (this.data.pageStyle) {
-            this.exitPinned();
-          } else if (this.data.innerScrollEnabled) {
-            this.setData({ innerScrollEnabled: false });
-          }
-        }
-      } else {
-        if (!this.suspendPinLock) {
-          this.evaluatePinnedState();
-        }
-      }
-    },
-    handlePageScroll({ scrollTop = 0 }) {
-      this.pageScrollTop = scrollTop;
-      this.evaluatePinnedState();
-    },
-    evaluatePinnedState() {
-      if (this.bridgeActive || this.suspendPinLock) {
-        return;
-      }
-      if (typeof this.pinTriggerScrollTop !== 'number') {
-        return;
-      }
-      const threshold = Math.max((this.pinTriggerScrollTop || 0) - 2, 0);
-      const shouldPin = (this.pageScrollTop || 0) >= threshold;
-      if (shouldPin) {
-        if (!this.data.isPinned) {
-          this.enterPinned();
-        }
-      } else if (this.data.isPinned) {
-        this.exitPinned();
-      }
-    },
-    enterPinned() {
-      if (this.data.isPinned) {
-        return;
-      }
-      this.setData(
-        {
-          isPinned: true,
-          pageStyle: 'overflow:hidden;height:100vh;',
-          innerScrollEnabled: true,
-          leftScrollTop: null,
-          rightScrollTop: null,
-        },
-        () => {
-          this.scheduleLayoutMeasurement();
-        }
-      );
-    },
-    exitPinned(options = {}) {
-      const { fromBridge = false } = options || {};
-      if (!this.data.isPinned && !this.data.pageStyle && !this.data.innerScrollEnabled) {
-        return;
-      }
-      const patch = {
-        isPinned: false,
-        pageStyle: '',
-        innerScrollEnabled: fromBridge ? true : false,
-      };
-      this.setData(patch);
-    },
-    scheduleLayoutMeasurement() {
-      if (this.layoutTimer) {
-        clearTimeout(this.layoutTimer);
-      }
-      this.layoutTimer = setTimeout(() => {
-        this.layoutTimer = null;
-        const query = wx.createSelectorQuery().in(this);
-        query.select('#customerMenuSentinel').boundingClientRect();
-        query.select('.catalog-section').boundingClientRect();
-        query.exec((res) => {
-          this.applyLayoutMetrics(res);
-        });
-      }, 60);
-    },
-    applyLayoutMetrics(res) {
-      if (!Array.isArray(res) || !this.systemInfo) {
-        return;
-      }
-      const sentinelRect = res[0];
-      const catalogRect = res[1];
-      
-      if (sentinelRect && typeof sentinelRect.top === 'number') {
-        const offsetPx = this.rpxToPx(PIN_TRIGGER_OFFSET_RPX) || 0;
-        const rawTop = (this.pageScrollTop || 0) + sentinelRect.top - offsetPx;
-        this.pinTriggerScrollTop = rawTop > 0 ? rawTop : 0;
-      }
-      
-      if (catalogRect && typeof catalogRect.top === 'number') {
-        const { windowHeight, safeBottom } = this.systemInfo;
-        const tabHeight = this.rpxToPx(ADMIN_TABBAR_HEIGHT_RPX);
-        const padding = this.rpxToPx(LOCK_CONTAINER_VERTICAL_PADDING_RPX);
-        const minHeight = this.rpxToPx(MENU_COLUMN_MIN_HEIGHT_RPX);
-        const height = Math.max(
-          windowHeight - tabHeight - safeBottom - padding,
-          minHeight
-        );
-        
-        if (this.data.catalogViewportHeight !== height) {
-          this.setData({ 
-            catalogViewportHeight: height
-          });
-        }
-      }
     },
     onCategoryTap(event) {
-      const { id } = event.currentTarget.dataset;
-      if (!id || id === this.data.activeCategoryId) return;
-      this.setData({
-        activeCategoryId: id,
-        rightIntoView: `category-${id}`,
+      const { id } = event?.currentTarget?.dataset || {};
+      if (!id) {
+        return;
+      }
+      this.scrollToCategory(String(id));
+    },
+    onLockChange(event) {
+      const { isLocked } = event?.detail || {};
+      this.setData({ isMenuLocked: !!isLocked });
+      this._manualCategoryScroll = null;
+      this.prepareMenuAnchors();
+      if (isLocked) {
+        this.syncActiveCategoryByScroll(this.currentDishScrollTop || 0, 'locked', { force: true });
+      } else {
+        this.syncActiveCategoryByScroll(this.currentPageScrollTop || 0, 'page', { force: true });
+      }
+    },
+    onDishPanelScroll(event) {
+      const { scrollTop } = event?.detail || {};
+      this.currentDishScrollTop = scrollTop || 0;
+      if (!this.data.isMenuLocked) {
+        return;
+      }
+      this.syncActiveCategoryByScroll(this.currentDishScrollTop, 'locked');
+    },
+    onPagePanelScroll(event) {
+      const { scrollTop } = event?.detail || {};
+      this.currentPageScrollTop = scrollTop || 0;
+      if (this.data.isMenuLocked) {
+        return;
+      }
+      this.syncActiveCategoryByScroll(this.currentPageScrollTop, 'page');
+    },
+    prepareMenuAnchors() {
+      if (this._prepareAnchorsTimer) {
+        clearTimeout(this._prepareAnchorsTimer);
+      }
+      this._prepareAnchorsTimer = setTimeout(() => {
+        this.captureMenuAnchors();
+      }, 60);
+    },
+    captureMenuAnchors() {
+      const component = this.selectComponent('#menuScroll');
+      if (!component || typeof component.createSelectorQuery !== 'function') {
+        return;
+      }
+      const containerQuery = component.createSelectorQuery();
+      containerQuery.select('#msc-dishes').boundingClientRect();
+      containerQuery.select('#msc-dishes').scrollOffset();
+      containerQuery.select('#msc-scroll').boundingClientRect();
+      containerQuery.select('#msc-scroll').scrollOffset();
+      containerQuery.exec((containerRes) => {
+        if (!Array.isArray(containerRes) || containerRes.length < 4) {
+          return;
+        }
+        const dishRect = containerRes[0] || {};
+        const dishOffset = containerRes[1] || {};
+        const pageRect = containerRes[2] || {};
+        const pageOffset = containerRes[3] || {};
+
+        const dishViewportHeight = dishRect?.height || 0;
+        const pageViewportHeight = pageRect?.height || 0;
+        if (dishViewportHeight) {
+          this.lockedViewportHeight = dishViewportHeight;
+        }
+        if (pageViewportHeight) {
+          this.pageViewportHeight = pageViewportHeight;
+        }
+
+        const groupQuery = this.createSelectorQuery();
+        groupQuery.selectAll('.dish-group').fields({ id: true, rect: true, dataset: true, size: true });
+        groupQuery.exec((groupRes) => {
+          if (!Array.isArray(groupRes) || groupRes.length < 1) {
+            this.lockedAnchors = [];
+            this.pageAnchors = [];
+            return;
+          }
+          const groupRects = groupRes[0] || [];
+          if (!groupRects.length) {
+            this.lockedAnchors = [];
+            this.pageAnchors = [];
+            return;
+          }
+
+          const dishScrollTop = dishOffset?.scrollTop || 0;
+          const pageScrollTop = pageOffset?.scrollTop || 0;
+          const dishTop = dishRect?.top || 0;
+          const pageTop = pageRect?.top || 0;
+
+          const locked = [];
+          const pageAnchors = [];
+
+          groupRects.forEach((item) => {
+            if (!item) {
+              return;
+            }
+            const datasetId = item.dataset?.id;
+            let categoryId = datasetId != null ? String(datasetId) : '';
+            if (!categoryId && item.id) {
+              categoryId = item.id.replace('dish-group-', '');
+            }
+            categoryId = categoryId != null ? String(categoryId) : '';
+            if (!categoryId) {
+              return;
+            }
+            const topLocked = dishScrollTop + (item.top - dishTop);
+            const topPage = pageScrollTop + (item.top - pageTop);
+            locked.push({
+              id: categoryId,
+              top: topLocked,
+              bottom: topLocked + (item.height || 0),
+            });
+            pageAnchors.push({
+              id: categoryId,
+              top: topPage,
+              bottom: topPage + (item.height || 0),
+            });
+          });
+
+          locked.sort((a, b) => a.top - b.top);
+          pageAnchors.sort((a, b) => a.top - b.top);
+          this.lockedAnchors = locked;
+          this.pageAnchors = pageAnchors;
+
+          if (this.data.isMenuLocked) {
+            this.syncActiveCategoryByScroll(this.currentDishScrollTop || 0, 'locked', { force: true });
+          } else {
+            this.syncActiveCategoryByScroll(this.currentPageScrollTop || 0, 'page', { force: true });
+          }
+        });
       });
     },
-    onRightScroll(event) {
-      const scrollTop = event.detail.scrollTop || 0;
-      if (!this.groupOffsets || !this.groupOffsets.length) return;
-      let active = this.groupOffsets[0];
-      for (let i = 0; i < this.groupOffsets.length; i += 1) {
-        const group = this.groupOffsets[i];
-        if (scrollTop + SCROLL_UNLOCK_THRESHOLD >= group.start) {
-          active = group;
-        } else {
+    syncActiveCategoryByScroll(scrollTop = 0, mode = 'locked', options = {}) {
+      const anchors = mode === 'locked' ? this.lockedAnchors : this.pageAnchors;
+      if (!anchors || !anchors.length) {
+        return;
+      }
+      const currentId = this.data.activeCategoryId != null ? String(this.data.activeCategoryId) : '';
+      const viewportHeight =
+        mode === 'locked' ? this.lockedViewportHeight : this.pageViewportHeight;
+      let reference;
+      if (viewportHeight && viewportHeight > 0) {
+        const bottomOffsetValue = Math.max(options.bottomOffset ?? ANCHOR_BOTTOM_OFFSET, 0);
+        const effectiveOffset =
+          viewportHeight > bottomOffsetValue
+            ? bottomOffsetValue
+            : Math.max(viewportHeight * 0.2, 0);
+        reference = (scrollTop || 0) + Math.max(viewportHeight - effectiveOffset, 0);
+      } else {
+        const fallbackOffset = options.offset ?? 60;
+        reference = (scrollTop || 0) + fallbackOffset;
+      }
+      let target = anchors[anchors.length - 1];
+      for (let i = 0; i < anchors.length; i += 1) {
+        const anchor = anchors[i];
+        if (!anchor || typeof anchor.bottom !== 'number') {
+          continue;
+        }
+        if (reference <= anchor.bottom) {
+          target = anchor;
           break;
         }
       }
-      if (active && active.id && active.id !== this.data.activeCategoryId) {
-        this.setData({ activeCategoryId: active.id });
+      if (!target || target.id == null) {
+        return;
+      }
+      const targetId = String(target.id);
+      if (!targetId) {
+        return;
+      }
+      const manual = this._manualCategoryScroll;
+      if (!options.force && manual && manual.id === targetId) {
+        const elapsed = Date.now() - manual.timestamp;
+        if (elapsed < 400) {
+          return;
+        }
+        this._manualCategoryScroll = null;
+      }
+      if (targetId !== currentId) {
+        this.setData({ activeCategoryId: targetId }, () => {
+          this.ensureActiveCategoryVisible(targetId, options);
+        });
+      } else {
+        this.ensureActiveCategoryVisible(targetId, options);
       }
     },
-    onColumnScrollUpper(event) {
-      if (!this.data.isPinned) return;
-      
-      // 检查滚动视图是否真的在顶部
-      const scrollTop = event?.detail?.scrollTop || 0;
-      if (scrollTop > 5) return; // 还没到顶部
-      
-      // 只有菜品列表（右侧）滚动到顶部才能触发解锁
-      const scrollViewId = event?.currentTarget?.id;
-      if (scrollViewId === 'leftScroll') {
-        return; // 分类列表（左侧）滚动到顶部不触发解锁
+    scrollToCategory(categoryId, options = {}) {
+      const id = categoryId != null ? String(categoryId) : '';
+      if (!id) {
+        return;
       }
-      
-      // 只有右侧菜品列表滚动到顶部才触发解锁
-      if (scrollViewId !== 'rightScroll') {
-        return; // 其他情况也不触发解锁
+      const current = this.data.activeCategoryId != null ? String(this.data.activeCategoryId) : '';
+      if (id !== current) {
+        this.setData({ activeCategoryId: id });
       }
-      
-      // 解锁并恢复页面滚动
-      const targetScroll = Math.max((this.pinTriggerScrollTop || 0) - SCROLL_UNLOCK_THRESHOLD, 0);
-      this.suspendPinLock = true;
-      this.exitPinned();
-      
-      // 使用 nextTick 确保状态更新后再滚动
-      wx.nextTick(() => {
-        wx.pageScrollTo({ scrollTop: targetScroll, duration: 100 });
-        // 延迟恢复锁定检测
-        setTimeout(() => {
-          this.suspendPinLock = false;
-        }, 200);
+      const component = this.selectComponent('#menuScroll');
+      if (!component) {
+        return;
+      }
+      const scrollOptions = { ...options, force: true };
+      const anchorId = `dish-group-${id}`;
+      if (this.data.isMenuLocked && typeof component.scrollDishTo === 'function') {
+        const lockedAnchors = this.lockedAnchors || [];
+        const lockedAnchor = lockedAnchors.find((item) => item && String(item.id) === id);
+        if (lockedAnchor) {
+          component.scrollDishTo(lockedAnchor.top, scrollOptions);
+        } else if (typeof component.scrollDishIntoView === 'function') {
+          component.scrollDishIntoView(anchorId, scrollOptions);
+        }
+      } else if (typeof component.scrollDishIntoView === 'function') {
+        component.scrollDishIntoView(anchorId, scrollOptions);
+      }
+      this._manualCategoryScroll = {
+        id,
+        timestamp: Date.now(),
+      };
+      this.ensureActiveCategoryVisible(id, scrollOptions);
+    },
+    ensureActiveCategoryVisible(categoryId, options = {}) {
+      const id = categoryId != null ? String(categoryId) : '';
+      if (!id || !this.data.isMenuLocked) {
+        return;
+      }
+      const component = this.selectComponent('#menuScroll');
+      if (!component || typeof component.scrollCategoryTo !== 'function' || typeof component.createSelectorQuery !== 'function') {
+        return;
+      }
+      const itemSelector = `#category-item-${id}`;
+      const pageQuery = this.createSelectorQuery();
+      pageQuery.select(itemSelector).boundingClientRect();
+      pageQuery.exec((pageRes = []) => {
+        const [itemRect] = pageRes || [];
+        if (!itemRect) {
+          return;
+        }
+        const compQuery = component.createSelectorQuery();
+        compQuery.select('#msc-categories').boundingClientRect();
+        compQuery.select('#msc-categories').scrollOffset();
+        compQuery.exec((compRes = []) => {
+          const [containerRect, containerOffset] = compRes || [];
+          if (!containerRect || !containerOffset) {
+            return;
+          }
+          const containerTop = containerRect.top || 0;
+          const containerBottom = containerTop + (containerRect.height || 0);
+          const currentScrollTop = typeof containerOffset.scrollTop === 'number' ? containerOffset.scrollTop : 0;
+          const targetTop = itemRect.top || 0;
+          const targetBottom = itemRect.bottom || 0;
+          let nextScrollTop = currentScrollTop;
+          if (targetTop < containerTop) {
+            nextScrollTop = Math.max(currentScrollTop - (containerTop - targetTop), 0);
+          } else if (targetBottom > containerBottom) {
+            nextScrollTop = currentScrollTop + (targetBottom - containerBottom);
+          } else {
+            return;
+          }
+          component.scrollCategoryTo(nextScrollTop);
+        });
       });
+    },
+    onGoMenuSelector() {
+      wx.redirectTo({ url: '/pages/menu-selector/index' });
     },
     onShowRoleSwitcher() {
       const { otherRoles } = this.computeRoleSwitchOptions();
@@ -565,8 +558,10 @@ createPage({
       if (!dishId) return;
       wx.navigateTo({ url: `/pages/customer/dish-detail/index?id=${dishId}` });
     },
-    onTapAddDish(event) {
-      const { dishId } = event.currentTarget.dataset;
+    async onTapAddDish(event) {
+      const { dishId, domId, dotColor } = event?.currentTarget?.dataset || {};
+      const animationColor = dotColor || '#2e8df1';
+      this.pendingOptionAnimation = null;
       if (this.data.activeRole !== 'customer') {
         wx.showToast({ title: '请切换到顾客身份后点菜', icon: 'none' });
         return;
@@ -574,8 +569,16 @@ createPage({
       const dish = this.dishMap?.[dishId];
       if (!dish) return;
       if (!dish.optionIds || !dish.optionIds.length) {
-        this.addDishToCart(dish, {});
+        await this.addDishToCart(dish, {});
+        if (domId) {
+          this.startFlyAnimation(domId, animationColor);
+        }
         return;
+      }
+      if (domId) {
+        this.pendingOptionAnimation = { domId, color: animationColor };
+      } else {
+        this.pendingOptionAnimation = null;
       }
       const selections = {};
       const labels = {};
@@ -620,6 +623,7 @@ createPage({
       this.setData({ quantity });
     },
     onCloseModal() {
+      this.pendingOptionAnimation = null;
       this.setData({
         showOptionModal: false,
         selectedOptionList: [],
@@ -631,15 +635,61 @@ createPage({
       });
     },
     async onConfirmAdd() {
-      const { selectedDish, selectedOptionLabels, quantity } = this.data;
+      const { selectedDish, selectedOptions, selectedOptionLabels, selectedOptionList, quantity } = this.data;
       if (!selectedDish) return;
-      await this.addDishToCart(selectedDish, selectedOptionLabels, quantity);
+      const pendingAnimation = this.pendingOptionAnimation;
+      this.pendingOptionAnimation = null;
+
+      // 生成完整的optionsSnapshot
+      const optionsSnapshot = {};
+      selectedOptionList.forEach((option) => {
+        const selectedValue = selectedOptions[option.id];
+        const selectedChoice = option.choices.find(choice => choice.value === selectedValue);
+        optionsSnapshot[option.id] = {
+          name: option.name,
+          choices: option.choices,
+          selectedValue: selectedValue,
+          selectedLabel: selectedChoice ? selectedChoice.label : '',
+        };
+      });
+      
+      await this.addDishToCart(selectedDish, optionsSnapshot, quantity);
+      if (pendingAnimation && pendingAnimation.domId) {
+        this.startFlyAnimation(pendingAnimation.domId, pendingAnimation.color);
+      }
       this.onCloseModal();
+    },
+    async decreaseSimpleDishQuantity(dish) {
+      if (!dish) return;
+      const state = store.getState();
+      const baseItems = Array.isArray(this.data.cart?.items) ? this.data.cart.items : [];
+      const cart = this.data.cart
+        ? { ...this.data.cart, items: [...baseItems] }
+        : { items: [] };
+      const targetIndex = cart.items.findIndex((item) => {
+        if (item.dishId !== dish.id) {
+          return false;
+        }
+        const snapshot = item.optionsSnapshot || {};
+        return !snapshot || !Object.keys(snapshot).length;
+      });
+      if (targetIndex < 0) {
+        return;
+      }
+      const currentQuantity = Number(cart.items[targetIndex].quantity || 0);
+      if (currentQuantity <= 1) {
+        cart.items.splice(targetIndex, 1);
+      } else {
+        cart.items[targetIndex].quantity = currentQuantity - 1;
+      }
+      const updated = await updateCart(state.activeMenuId, state.user.id, cart.items);
+      this.setData({ cart: updated }, () => this.updateCartSummary());
     },
     async addDishToCart(dish, optionsSnapshot = {}, quantity = 1) {
       const state = store.getState();
+      const baseItems = Array.isArray(this.data.cart?.items) ? this.data.cart.items : [];
       const cart = this.data.cart
-        ? { ...this.data.cart, items: [...this.data.cart.items] }
+        ? { ...this.data.cart, items: [...baseItems] }
         : { items: [] };
       const snapshot =
         optionsSnapshot && Object.keys(optionsSnapshot).length ? optionsSnapshot : {};
@@ -662,6 +712,85 @@ createPage({
       const updated = await updateCart(state.activeMenuId, state.user.id, cart.items);
       this.setData({ cart: updated }, () => this.updateCartSummary());
       wx.showToast({ title: '已加入购物车', icon: 'success' });
+    },
+    startFlyAnimation(domId, color) {
+      if (!domId) {
+        return;
+      }
+      const query = this.createSelectorQuery();
+      query.select(`#${domId}`).boundingClientRect();
+      query.select('#floating-cart').boundingClientRect();
+      query.exec((res = []) => {
+        const [sourceRect, targetRect] = res || [];
+        if (!sourceRect || !targetRect) {
+          return;
+        }
+        const sourceTop = (sourceRect.top || 0) + (sourceRect.height || 0) / 2;
+        const sourceLeft = (sourceRect.left || 0) + (sourceRect.width || 0) / 2;
+        const targetTop = (targetRect.top || 0) + (targetRect.height || 0) / 2;
+        const targetLeft = (targetRect.left || 0) + (targetRect.width || 0) / 2;
+        const translateX = targetLeft - sourceLeft;
+        const translateY = targetTop - sourceTop;
+        const dotId = `dot-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const newDots = [...(this.data.flyDots || [])];
+        newDots.push({
+          id: dotId,
+          top: sourceTop,
+          left: sourceLeft,
+          translateX: 0,
+          translateY: 0,
+          opacity: 1,
+          color: color || '#2e8df1',
+        });
+        const dotIndex = newDots.length - 1;
+        this.setData({ flyDots: newDots }, () => {
+          wx.nextTick(() => {
+            this.setData({
+              [`flyDots[${dotIndex}].translateX`]: translateX,
+              [`flyDots[${dotIndex}].translateY`]: translateY,
+              [`flyDots[${dotIndex}].opacity`]: 0,
+            });
+          });
+          if (!this.flyDotTimers) {
+            this.flyDotTimers = {};
+          }
+          this.flyDotTimers[dotId] = setTimeout(() => {
+            this.removeFlyDot(dotId);
+          }, 650);
+        });
+      });
+    },
+    removeFlyDot(dotId) {
+      if (!dotId) {
+        return;
+      }
+      if (this.flyDotTimers && this.flyDotTimers[dotId]) {
+        clearTimeout(this.flyDotTimers[dotId]);
+        delete this.flyDotTimers[dotId];
+      }
+      const list = this.data.flyDots || [];
+      const index = list.findIndex((item) => item && item.id === dotId);
+      if (index === -1) {
+        return;
+      }
+      const nextList = [...list];
+      nextList.splice(index, 1);
+      this.setData({ flyDots: nextList });
+    },
+    async onTapDecreaseDish(event) {
+      const dishId = event?.currentTarget?.dataset?.dishId;
+      if (!dishId) {
+        return;
+      }
+      if (this.data.activeRole !== 'customer') {
+        wx.showToast({ title: '请切换到顾客身份后点菜', icon: 'none' });
+        return;
+      }
+      const dish = this.dishMap?.[dishId];
+      if (!dish || (dish.optionIds && dish.optionIds.length)) {
+        return;
+      }
+      await this.decreaseSimpleDishQuantity(dish);
     },
     onGoToCheckout() {
       if (!this.data.cartSummary.itemCount) {

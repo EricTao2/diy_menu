@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "通知",
+  "enablePullDownRefresh": true,
+  "backgroundColor": "#f5f5f5",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "custom-tab-bar": "/custom-tab-bar/index"
+  }
+}

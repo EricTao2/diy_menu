@@ -1,0 +1,65 @@
+<view
+  class="menu-scroll-container"
+  capture-bind:touchstart="onTouchStartCapture"
+  capture-bind:touchmove="onTouchMoveCapture"
+  capture-bind:touchend="onTouchEndCapture"
+  capture-bind:touchcancel="onTouchEndCapture"
+>
+  <scroll-view 
+    id="msc-scroll"
+    class="page-scroll" 
+    scroll-y="{{!isLocked}}"
+    bindscroll="onPageScroll"
+    enable-back-to-top="{{true}}"
+    show-scrollbar="{{false}}"
+    enhanced="{{true}}"
+    scroll-with-animation="{{true}}"
+    scroll-into-view="{{pageScrollTarget}}"
+  >
+    <view id="msc-header" class="header-area">
+      <slot name="header"></slot>
+    </view>
+
+    <view
+      id="msc-sentinel"
+      class="sentinel {{debugSentinel ? 'sentinel--debug' : ''}}"
+      style="{{sentinelStyle}}"
+    ></view>
+
+    <view 
+      id="msc-menu"
+      class="menu-area {{highlightBoundary ? 'menu-area--highlight' : ''}} {{flushLeft ? 'menu-area--flush-left' : ''}} {{flushRight ? 'menu-area--flush-right' : ''}}" 
+      style="{{menuAreaStyle}}"
+    >
+      <scroll-view 
+        class="category-list" 
+        id="msc-categories"
+        style="{{categoryListStyle}}"
+        scroll-y="{{isLocked}}"
+        bindscroll="onCategoryScroll"
+        show-scrollbar="{{false}}"
+        enhanced="{{true}}"
+        scroll-with-animation="{{true}}"
+        scroll-top="{{categoryScrollTop}}"
+      >
+        <slot name="categories"></slot>
+      </scroll-view>
+
+      <scroll-view 
+        class="dish-list" 
+        id="msc-dishes"
+        scroll-y="{{isLocked}}"
+        bindscroll="onDishScroll"
+        bindscrolltoupper="onDishScrollUpper"
+        mark:touch-area="dishes"
+        upper-threshold="4"
+        show-scrollbar="{{false}}"
+        enhanced="{{true}}"
+        scroll-with-animation="{{true}}"
+        scroll-top="{{dishScrollTop}}"
+      >
+        <slot name="dishes"></slot>
+      </scroll-view>
+    </view>
+  </scroll-view>
+</view>

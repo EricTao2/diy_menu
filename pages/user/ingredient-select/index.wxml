@@ -1,0 +1,42 @@
+<view class="page">
+  <view class="search-bar">
+    <input
+      class="search-input"
+      type="text"
+      placeholder="搜索原材料"
+      value="{{searchQuery}}"
+      bindinput="onSearchInput"
+    />
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <view wx:elif="{{filteredIngredients.length === 0}}" class="empty">
+    <text class="empty-text">{{searchQuery ? '未找到相关原材料' : '还没有原材料'}}</text>
+  </view>
+
+  <view wx:else class="ingredient-list">
+    <view
+      wx:for="{{filteredIngredients}}"
+      wx:key="id"
+      class="ingredient-item"
+      data-ingredient-id="{{item.id}}"
+      data-name="{{item.name}}"
+      data-unit="{{item.unit}}"
+      data-image="{{item.image}}"
+      bindtap="onSelectIngredient"
+    >
+      <image
+        class="ingredient-image"
+        src="{{item.image || 'https://dummyimage.com/80x80/e5e7eb/9ca3af&text=Ing'}}"
+        mode="aspectFill"
+      />
+      <view class="ingredient-info">
+        <text class="ingredient-name">{{item.name}}</text>
+        <text class="ingredient-unit">单位：{{item.unit}}</text>
+      </view>
+      <view class="select-icon">→</view>
+    </view>
+  </view>
+</view>
+
