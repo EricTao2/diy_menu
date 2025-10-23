@@ -1,6 +1,6 @@
 export const formatCurrency = (value, currency = '¥') => {
   const number = Number(value || 0);
-  return `${currency}${number.toFixed(2)}`;
+  return `${currency}${number.toFixed(1)}`;
 };
 
 export const formatDateTime = (timestamp) => {

@@ -20,7 +20,7 @@
             </view>
             <view class="item-quantity">数量: {{item.quantity}}</view>
             <view class="item-options" wx:if="{{item.options.length}}">
-              <text wx:for="{{item.options}}" wx:key="label" class="option-item">{{item.label}}</text>
+              <text wx:for="{{item.options}}" wx:key="text" class="option-item">{{item.text}}</text>
             </view>
           </view>
         </view>

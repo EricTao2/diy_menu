@@ -20,14 +20,45 @@
           <label>菜品名称</label>
           <input value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="请输入菜品名称" />
         </view>
-        <view class="form-grid">
-          <view class="form-field">
-            <label>价格</label>
-            <input type="digit" value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="请输入价格" />
-          </view>
-          <view class="form-field">
-            <label>库存</label>
-            <input type="number" value="{{form.stock}}" data-field="stock" bindinput="onInput" placeholder="库存数量" />
+        <view class="form-field">
+          <label>价格</label>
+          <input type="digit" value="{{form.price}}" data-field="price" bindinput="onInput" placeholder="请输入价格" />
+        </view>
+        <view class="form-field">
+          <label>菜品图片</label>
+          <view class="image-upload">
+            <view class="image-preview" wx:if="{{form.image}}" bindtap="onPreviewImage">
+              <image src="{{form.image}}" mode="aspectFill"></image>
+              <view class="image-preview__mask">预览</view>
+            </view>
+            <view class="image-placeholder" wx:elif="{{!imageUploading}}">
+              <text>尚未上传图片</text>
+            </view>
+            <view class="image-actions">
+              <button
+                class="btn-image"
+                type="primary"
+                size="mini"
+                loading="{{imageUploading}}"
+                disabled="{{imageUploading}}"
+                bindtap="onChooseImage"
+              >{{imageUploading ? '上传中' : '上传图片'}}</button>
+              <button
+                class="btn-image"
+                size="mini"
+                bindtap="onPreviewImage"
+                wx:if="{{form.image}}"
+              >预览</button>
+              <button
+                class="btn-image btn-image--danger"
+                size="mini"
+                bindtap="onClearImage"
+                wx:if="{{form.image}}"
+              >移除</button>
+            </view>
+            <view class="image-hint">
+              建议上传 1:1 或 4:3 的菜品实拍图，大小不超过 10MB。
+            </view>
           </view>
         </view>
         <view class="form-field status-row">
@@ -42,10 +73,6 @@
           <picker mode="selector" range="{{categoryPicker}}" bindchange="onCategoryChange">
             <view class="picker">{{selectedCategoryName || categoryPicker[0]}}</view>
           </picker>
-        </view>
-        <view class="form-field">
-          <label>主图地址</label>
-          <input value="{{form.image}}" data-field="image" bindinput="onInput" placeholder="https://" />
         </view>
         <view class="form-field">
           <label>描述</label>
@@ -69,19 +96,27 @@
             从菜谱导入
           </button>
         </view>
-        
         <view wx:else class="recipe-linked">
           <view class="recipe-info">
             <text class="recipe-label">已关联菜谱：</text>
-            <text class="recipe-name">{{recipe ? recipe.name : '加载中...'}}</text>
+            <text wx:if="{{!recipeMissing}}" class="recipe-name">{{recipe ? recipe.name : '加载中...'}}</text>
+            <text wx:else class="recipe-name recipe-name--missing">关联的菜谱已删除</text>
           </view>
           <view class="recipe-actions">
-            <button class="btn-recipe-action" size="mini" bindtap="onViewRecipe">
+            <button
+              class="btn-recipe-action {{recipeMissing ? 'btn-recipe-action--disabled' : ''}}"
+              size="mini"
+              bindtap="onViewRecipe"
+              disabled="{{recipeMissing}}"
+            >
               查看菜谱
             </button>
             <button class="btn-recipe-action" size="mini" bindtap="onChangeRecipe">
               更换菜谱
             </button>
+          </view>
+          <view class="recipe-hint" wx:if="{{recipeMissing}}">
+            当前关联的菜谱已删除，请重新选择以继续同步菜品信息。
           </view>
         </view>
       </view>
@@ -103,6 +138,7 @@
                 ></checkbox>
                 <view class="option-content">
                   <text class="option-name">{{option.name}}</text>
+                  <text class="option-choice-summary" wx:if="{{option.choiceSummary}}">{{option.choiceSummary}}</text>
                 </view>
               </view>
             </block>

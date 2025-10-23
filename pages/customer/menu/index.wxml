@@ -1,4 +1,4 @@
-<view class="page {{themeClass}}">
+<view class="page {{themeClass}}" capture-bind:tap="onPageCaptureTap">
   <view class="container">
     <view class="loading" wx:if="{{loading}}">加载中...</view>
     <menu-scroll-container
@@ -87,7 +87,6 @@
                       <view class="dish-card__content">
                         <view class="dish-card__header">
                           <text class="dish-card__name">{{dish.name}}</text>
-                          <text class="dish-card__recipe" wx:if="{{dish.recipeId}}">📖 有菜谱</text>
                         </view>
                         <text class="dish-card__price">{{dish.priceText}}</text>
                         <text class="dish-card__desc" wx:if="{{dish.description}}">{{dish.description}}</text>
@@ -112,42 +111,29 @@
                           </view>
                         </block>
                         <block wx:else>
-                          <view
-                            class="dish-card__quantity-controls"
-                            wx:if="{{cartDishCountMap[dish.id]}}"
-                          >
+                          <view class="dish-card__quantity-controls">
                             <button
-                              class="dish-card__qty-btn"
+                              class="dish-card__qty-btn dish-card__qty-btn--decrease {{cartDishCountMap[dish.id] ? '' : 'dish-card__qty-hidden'}}"
                               data-dish-id="{{dish.id}}"
                               catchtap="onTapDecreaseDish"
+                              disabled="{{!cartDishCountMap[dish.id]}}"
                             >
-                              -
+                              <text class="dish-card__qty-symbol">-</text>
                             </button>
-                            <text class="dish-card__qty-count">
-                              {{cartDishCountMap[dish.id]}}
+                            <text class="dish-card__qty-count {{cartDishCountMap[dish.id] ? '' : 'dish-card__qty-hidden'}}">
+                              {{cartDishCountMap[dish.id] || 0}}
                             </text>
                             <button
                               id="add-btn-{{dish.id}}"
-                              class="dish-card__qty-btn"
+                              class="dish-card__qty-btn dish-card__qty-btn--increase"
                               data-dish-id="{{dish.id}}"
                               data-dom-id="add-btn-{{dish.id}}"
                               data-dot-color="#1b82e9"
                               catchtap="onTapAddDish"
                             >
-                              +
+                              <text class="dish-card__qty-symbol">+</text>
                             </button>
                           </view>
-                          <button
-                            wx:else
-                            id="add-btn-{{dish.id}}"
-                            class="dish-card__action-btn"
-                            data-dish-id="{{dish.id}}"
-                            data-dom-id="add-btn-{{dish.id}}"
-                            data-dot-color="#437af2"
-                            catchtap="onTapAddDish"
-                          >
-                            +
-                          </button>
                         </block>
                       </view>
                     </view>
@@ -191,7 +177,7 @@
       <button class="modal__close" bindtap="onCloseModal">×</button>
       <view class="modal__header">
         <text class="modal__title">{{selectedDish.name}}</text>
-        <text class="modal__subtitle">¥{{selectedDishPriceText}}</text>
+        <text class="modal__subtitle">{{selectedDishPriceText}}</text>
       </view>
       <scroll-view scroll-y class="modal__scroll">
         <view wx:if="{{selectedOptionList.length}}" class="modal__options">

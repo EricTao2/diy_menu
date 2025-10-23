@@ -4,6 +4,7 @@ import { getOrdersByUser, updateCart, getCart, updateOrderStatus } from '../../.
 import { formatCurrency, formatDateTime } from '../../../utils/format';
 import { ensureRole } from '../../../utils/auth';
 import { CUSTOMER_BOTTOM_TABS } from '../../../common/customer-tabs';
+import { showCustomerToast } from '../../../utils/toast';
 
 const CUSTOMER_TAB_URL_MAP = CUSTOMER_BOTTOM_TABS.reduce((acc, tab) => {
   if (tab?.key) {
@@ -115,7 +116,7 @@ createPage({
         }
         
         if (validItems.length === 0) {
-          wx.showToast({ title: '没有可用的菜品', icon: 'none' });
+          showCustomerToast({ title: '没有可用的菜品' });
           return;
         }
         
@@ -123,7 +124,7 @@ createPage({
         await getCart(state.activeMenuId, state.user.id);
         wx.navigateTo({ url: '/pages/customer/cart/index' });
       } catch (error) {
-        wx.showToast({ title: '操作失败', icon: 'none' });
+        showCustomerToast({ title: '操作失败', type: 'error' });
       }
     },
     onView(event) {
@@ -137,7 +138,7 @@ createPage({
       
       // 只有新订单可以取消
       if (order.status !== 'new') {
-        wx.showToast({ title: '该订单无法取消', icon: 'none' });
+        showCustomerToast({ title: '该订单无法取消', type: 'warning' });
         return;
       }
       
@@ -148,10 +149,10 @@ createPage({
           if (res.confirm) {
             try {
               await updateOrderStatus(orderId, { status: 'cancelled' });
-              wx.showToast({ title: '订单已取消', icon: 'success' });
+              showCustomerToast({ title: '订单已取消', type: 'success' });
               await this.loadOrders();
             } catch (error) {
-              wx.showToast({ title: '取消失败', icon: 'none' });
+              showCustomerToast({ title: '取消失败', type: 'error' });
             }
           }
         }

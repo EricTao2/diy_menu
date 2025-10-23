@@ -11,6 +11,7 @@ import {
 import { formatCurrency } from '../../../utils/format';
 import { hasRole } from '../../../utils/auth';
 import { CUSTOMER_BOTTOM_TABS } from '../../../common/customer-tabs';
+import { showCustomerToast, hideCustomerToast } from '../../../utils/toast';
 
 const app = getApp();
 const store = app.getStore();
@@ -37,8 +38,15 @@ const CUSTOMER_TAB_URL_MAP = CUSTOMER_BOTTOM_TABS.reduce((acc, tab) => {
   return acc;
 }, {});
 
-const normalizePrice = (value) => Number(value || 0);
+const normalizePrice = (value) => {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+  return Math.round(number * 10) / 10;
+};
 const ANCHOR_BOTTOM_OFFSET = 80;
+const DEFAULT_TOAST_DURATION = 1800;
 
 createPage({
   data: {
@@ -55,7 +63,7 @@ createPage({
     cartSummary: {
       itemCount: 0,
       totalPrice: 0,
-      totalText: '0.00',
+      totalText: formatCurrency(0),
     },
     selectedDish: null,
     selectedOptionList: [],
@@ -72,6 +80,7 @@ createPage({
     debugSentinel: false,
     categoryListWidth: 180,
     isMenuLocked: false,
+    toastVisible: false,
   },
   mapStoreToData,
   async onLoad() {
@@ -99,10 +108,14 @@ createPage({
       });
       this.flyDotTimers = null;
     }
+    this.dismissToastIfVisible();
   },
   methods: {
     async initPage() {
       const state = store.getState();
+      if (typeof this.dismissToastIfVisible === 'function') {
+        this.dismissToastIfVisible();
+      }
       if (!state.activeMenuId) {
         wx.redirectTo({ url: '/pages/menu-selector/index' });
         return;
@@ -124,6 +137,10 @@ createPage({
       this.pageViewportHeight = 0;
       this._manualCategoryScroll = null;
       this._prepareAnchorsTimer = null;
+      this._toastTimer = null;
+      this._cartSyncPromise = Promise.resolve();
+      this._cartSyncSeed = 0;
+      this._latestCartSyncToken = 0;
 
       await this.loadMenuData();
       this.hasLoaded = true;
@@ -195,6 +212,44 @@ createPage({
           this.updateCartSummary();
         }
       );
+      this._latestCartSyncToken = 0;
+    },
+    showToast(options = {}) {
+      const toastOptions = { ...options, mask: false };
+      if (!toastOptions.title) {
+        return;
+      }
+      const duration =
+        typeof toastOptions.duration === 'number' && toastOptions.duration >= 0
+          ? toastOptions.duration
+          : DEFAULT_TOAST_DURATION;
+      if (this._toastTimer) {
+        clearTimeout(this._toastTimer);
+        this._toastTimer = null;
+      }
+      this.setData({ toastVisible: true }, () => {
+        showCustomerToast(toastOptions);
+        this._toastTimer = setTimeout(() => {
+          this._toastTimer = null;
+          if (this.data.toastVisible) {
+            this.setData({ toastVisible: false });
+          }
+        }, duration + 50);
+      });
+    },
+    dismissToastIfVisible() {
+      if (!this.data.toastVisible) {
+        return;
+      }
+      if (this._toastTimer) {
+        clearTimeout(this._toastTimer);
+        this._toastTimer = null;
+      }
+      hideCustomerToast();
+      this.setData({ toastVisible: false });
+    },
+    onPageCaptureTap() {
+      this.dismissToastIfVisible();
     },
     updateCartSummary() {
       const { cart } = this.data;
@@ -203,7 +258,7 @@ createPage({
           cartSummary: {
             itemCount: 0,
             totalPrice: 0,
-            totalText: '0.00',
+            totalText: formatCurrency(0),
           },
           cartDishCountMap: {},
         });
@@ -498,7 +553,7 @@ createPage({
     onShowRoleSwitcher() {
       const { otherRoles } = this.computeRoleSwitchOptions();
       if (!otherRoles.length) {
-        wx.showToast({ title: '暂无其他角色', icon: 'none' });
+        this.showToast({ title: '暂无其他角色' });
         return;
       }
       wx.showActionSheet({
@@ -533,7 +588,7 @@ createPage({
       const menuRoles =
         (state.rolesByMenu && state.activeMenuId && state.rolesByMenu[state.activeMenuId]) || [];
       if (!menuRoles.includes(role)) {
-        wx.showToast({ title: '暂无该身份', icon: 'none' });
+        this.showToast({ title: '暂无该身份' });
         return;
       }
       store.setState({ activeRole: role });
@@ -545,7 +600,7 @@ createPage({
       } else if (role === 'chef') {
         wx.redirectTo({ url: '/pages/chef/order-list/index' });
       } else {
-        wx.showToast({ title: '暂不支持该身份', icon: 'none' });
+        this.showToast({ title: '暂不支持该身份' });
       }
     },
     onSwitchRole(event) {
@@ -563,13 +618,13 @@ createPage({
       const animationColor = dotColor || '#2e8df1';
       this.pendingOptionAnimation = null;
       if (this.data.activeRole !== 'customer') {
-        wx.showToast({ title: '请切换到顾客身份后点菜', icon: 'none' });
+        this.showToast({ title: '请切换到顾客身份后点菜' });
         return;
       }
       const dish = this.dishMap?.[dishId];
       if (!dish) return;
       if (!dish.optionIds || !dish.optionIds.length) {
-        await this.addDishToCart(dish, {});
+        this.addDishToCart(dish, {});
         if (domId) {
           this.startFlyAnimation(domId, animationColor);
         }
@@ -653,15 +708,14 @@ createPage({
         };
       });
       
-      await this.addDishToCart(selectedDish, optionsSnapshot, quantity);
+      this.addDishToCart(selectedDish, optionsSnapshot, quantity);
       if (pendingAnimation && pendingAnimation.domId) {
         this.startFlyAnimation(pendingAnimation.domId, pendingAnimation.color);
       }
       this.onCloseModal();
     },
-    async decreaseSimpleDishQuantity(dish) {
+    decreaseSimpleDishQuantity(dish) {
       if (!dish) return;
-      const state = store.getState();
       const baseItems = Array.isArray(this.data.cart?.items) ? this.data.cart.items : [];
       const cart = this.data.cart
         ? { ...this.data.cart, items: [...baseItems] }
@@ -682,36 +736,101 @@ createPage({
       } else {
         cart.items[targetIndex].quantity = currentQuantity - 1;
       }
-      const updated = await updateCart(state.activeMenuId, state.user.id, cart.items);
-      this.setData({ cart: updated }, () => this.updateCartSummary());
+      this.setData({ cart }, () => this.updateCartSummary());
+      this.syncCartInBackground(cart.items);
     },
-    async addDishToCart(dish, optionsSnapshot = {}, quantity = 1) {
-      const state = store.getState();
+    addDishToCart(dish, optionsSnapshot = {}, quantity = 1) {
+      if (!dish) {
+        return;
+      }
+      const safeQuantity = Math.max(Number(quantity) || 0, 1);
       const baseItems = Array.isArray(this.data.cart?.items) ? this.data.cart.items : [];
       const cart = this.data.cart
         ? { ...this.data.cart, items: [...baseItems] }
         : { items: [] };
       const snapshot =
-        optionsSnapshot && Object.keys(optionsSnapshot).length ? optionsSnapshot : {};
+        optionsSnapshot && Object.keys(optionsSnapshot).length
+          ? JSON.parse(JSON.stringify(optionsSnapshot))
+          : {};
       const existingIndex = cart.items.findIndex(
         (item) =>
           item.dishId === dish.id &&
           JSON.stringify(item.optionsSnapshot || {}) === JSON.stringify(snapshot || {})
       );
+      const unitPrice = normalizePrice(dish.price);
       if (existingIndex > -1) {
-        cart.items[existingIndex].quantity += quantity;
+        const currentQuantity = Number(cart.items[existingIndex].quantity) || 0;
+        cart.items[existingIndex] = {
+          ...cart.items[existingIndex],
+          quantity: currentQuantity + safeQuantity,
+          priceSnapshot: unitPrice,
+        };
       } else {
         cart.items.push({
           dishId: dish.id,
           name: dish.name,
-          quantity,
-          priceSnapshot: dish.price,
+          quantity: safeQuantity,
+          priceSnapshot: unitPrice,
           optionsSnapshot: snapshot,
         });
       }
-      const updated = await updateCart(state.activeMenuId, state.user.id, cart.items);
-      this.setData({ cart: updated }, () => this.updateCartSummary());
-      wx.showToast({ title: '已加入购物车', icon: 'success' });
+      this.setData({ cart }, () => {
+        this.updateCartSummary();
+      });
+      this.syncCartInBackground(cart.items);
+    },
+    syncCartInBackground(cartItems = []) {
+      if (!Array.isArray(cartItems)) {
+        return;
+      }
+      const state = store.getState();
+      const activeMenuId = state.activeMenuId;
+      const userId = state.user && state.user.id;
+      if (!activeMenuId || !userId) {
+        return;
+      }
+      const payloadItems = cartItems.map((item) => ({
+        ...item,
+        optionsSnapshot: item.optionsSnapshot
+          ? JSON.parse(JSON.stringify(item.optionsSnapshot))
+          : {},
+      }));
+      this._cartSyncSeed = (this._cartSyncSeed || 0) + 1;
+      const token = this._cartSyncSeed;
+      this._latestCartSyncToken = token;
+      const runSync = async () => {
+        try {
+          const updatedCart = await updateCart(activeMenuId, userId, payloadItems);
+          if (this._latestCartSyncToken !== token) {
+            return;
+          }
+          this.setData({ cart: updatedCart }, () => this.updateCartSummary());
+        } catch (error) {
+          console.error('[CustomerMenu] 同步购物车失败', error);
+          if (this._latestCartSyncToken !== token) {
+            return;
+          }
+          this.showToast({ title: '购物车同步失败，请重试', type: 'error' });
+          await this.reloadCartFromServer();
+        }
+      };
+      this._cartSyncPromise = (this._cartSyncPromise || Promise.resolve())
+        .catch(() => {})
+        .then(runSync);
+    },
+    async reloadCartFromServer() {
+      const state = store.getState();
+      const activeMenuId = state.activeMenuId;
+      const userId = state.user && state.user.id;
+      if (!activeMenuId || !userId) {
+        return;
+      }
+      try {
+        const cart = await getCart(activeMenuId, userId);
+        this.setData({ cart }, () => this.updateCartSummary());
+      } catch (error) {
+        console.error('[CustomerMenu] 重新获取购物车失败', error);
+      }
     },
     startFlyAnimation(domId, color) {
       if (!domId) {
@@ -777,24 +896,24 @@ createPage({
       nextList.splice(index, 1);
       this.setData({ flyDots: nextList });
     },
-    async onTapDecreaseDish(event) {
+    onTapDecreaseDish(event) {
       const dishId = event?.currentTarget?.dataset?.dishId;
       if (!dishId) {
         return;
       }
       if (this.data.activeRole !== 'customer') {
-        wx.showToast({ title: '请切换到顾客身份后点菜', icon: 'none' });
+        this.showToast({ title: '请切换到顾客身份后点菜' });
         return;
       }
       const dish = this.dishMap?.[dishId];
       if (!dish || (dish.optionIds && dish.optionIds.length)) {
         return;
       }
-      await this.decreaseSimpleDishQuantity(dish);
+      this.decreaseSimpleDishQuantity(dish);
     },
     onGoToCheckout() {
       if (!this.data.cartSummary.itemCount) {
-        wx.showToast({ title: '购物车为空', icon: 'none' });
+        this.showToast({ title: '购物车为空' });
         return;
       }
       wx.navigateTo({ url: '/pages/customer/order-confirm/index' });

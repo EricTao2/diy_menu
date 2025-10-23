@@ -100,7 +100,7 @@
 
 /* 备注输入框高度缩小一半 */
 .remark-textarea {
-  height: 60rpx !important;
+  height: 160rpx !important;
   min-height: 60rpx !important;
 }
 

@@ -6,18 +6,12 @@
       bindtap="onSelect"
     >
       <view class="tab-icon">
-        <text wx:if="{{tab.key === 'customerNotifications'}}">🔔</text>
-        <text wx:elif="{{tab.key === 'customerMenu'}}">🍽️</text>
-        <text wx:elif="{{tab.key === 'customerCart'}}">🛒</text>
-        <text wx:elif="{{tab.key === 'customerOrders'}}">📋</text>
-        <text wx:elif="{{tab.key === 'menuDesigner'}}">✏️</text>
-        <text wx:elif="{{tab.key === 'menuSettings'}}">⚙️</text>
-        <text wx:elif="{{tab.key === 'optionLibrary'}}">📚</text>
-        <text wx:elif="{{tab.key === 'orderOverview'}}">📊</text>
+        <text wx:if="{{tab.icon}}">{{tab.icon}}</text>
+        <text wx:elif="{{iconMap[tab.key]}}">{{iconMap[tab.key]}}</text>
         <text wx:else>📄</text>
       </view>
       <view class="tab-label">{{tab.label}}</view>
-      <view class="tab-badge" wx:if="{{tab.key === 'customerNotifications' && unreadCount > 0}}">
+      <view class="tab-badge" wx:if="{{tab.showBadge && unreadCount > 0}}">
         {{unreadCount}}
       </view>
     </view>

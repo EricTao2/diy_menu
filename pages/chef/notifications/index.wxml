@@ -1,0 +1,36 @@
+<view class="page {{themeClass}}">
+  <view class="container">
+    <view class="header">
+      <view class="title">点菜通知</view>
+      <view class="actions" wx:if="{{notifications.length}}">
+        <button class="mark-all-btn" bindtap="onMarkAllRead">全部已读</button>
+      </view>
+    </view>
+
+    <view class="notifications-list" wx:if="{{notifications.length}}">
+      <notification-panel
+        notifications="{{notifications}}"
+        bind:tap="onNotificationTap"
+      />
+    </view>
+
+    <view class="empty-state" wx:elif="{{!loading}}">
+      <view class="empty-icon">📭</view>
+      <view class="empty-text">暂无通知</view>
+      <view class="empty-desc">订单动态会在这里提示</view>
+    </view>
+
+    <view class="loading" wx:if="{{loading}}">
+      <text>加载中...</text>
+    </view>
+  </view>
+
+  <view class="tabbar-container">
+    <custom-tab-bar
+      active-key="chefNotifications"
+      tabs="{{chefTabs}}"
+      unread-count="{{unreadCount}}"
+      bind:change="onBottomTabChange"
+    />
+  </view>
+</view>

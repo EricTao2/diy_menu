@@ -11,7 +11,7 @@
     </view>
     <view class="info">
       <text class="name">{{dish.name}}</text>
-      <text class="price">¥{{dish.priceText}}</text>
+      <text class="price">{{dish.priceText}}</text>
       <text class="desc" wx:if="{{dish.description}}">{{dish.description}}</text>
     </view>
   </view>

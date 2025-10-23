@@ -12,6 +12,9 @@ import { ensureRole } from '../../../utils/auth';
 const app = getApp();
 const store = app.getStore();
 
+const DISH_IMAGE_DIR = 'dish_images';
+const MAX_DISH_IMAGE_FILE_SIZE = 10 * 1024 * 1024;
+
 const normalizeOptionIds = (optionIds) => {
   if (!Array.isArray(optionIds)) {
     return [];
@@ -30,22 +33,33 @@ const buildOptionSelectionMap = (optionIds) => {
   return map;
 };
 
-const parseNumberField = (value, { allowFloat = false } = {}) => {
+const parseNumberField = (value, { allowFloat = false, maxDecimals = 0 } = {}) => {
   const trimmed = String(value ?? '').trim();
   if (trimmed === '') {
-    return { valid: false, value: 0 };
+    return { valid: false, value: 0, reason: 'empty' };
   }
   const parsed = Number(trimmed);
   if (!Number.isFinite(parsed)) {
-    return { valid: false, value: 0 };
+    return { valid: false, value: 0, reason: 'nan' };
   }
   if (!allowFloat && !Number.isInteger(parsed)) {
-    return { valid: false, value: 0 };
+    return { valid: false, value: 0, reason: 'integer' };
   }
   if (parsed < 0) {
-    return { valid: false, value: 0 };
+    return { valid: false, value: 0, reason: 'negative' };
   }
-  return { valid: true, value: parsed };
+  if (!allowFloat) {
+    return { valid: true, value: parsed };
+  }
+  const decimalPart = trimmed.split('.')[1] || '';
+  if (decimalPart.length > maxDecimals) {
+    return { valid: false, value: 0, reason: 'decimals' };
+  }
+  const rounded =
+    typeof maxDecimals === 'number' && maxDecimals >= 0
+      ? Math.round(parsed * Math.pow(10, maxDecimals)) / Math.pow(10, maxDecimals)
+      : parsed;
+  return { valid: true, value: rounded };
 };
 
 const mapStoreToData = (state) => ({
@@ -68,7 +82,6 @@ createPage({
     form: {
       name: '',
       price: '',
-      stock: '',
       status: true,
       categoryId: '',
       image: '',
@@ -78,9 +91,11 @@ createPage({
       recipeId: '',
     },
     recipe: null,
+    recipeMissing: false,
     saving: false,
     deleting: false,
     transitionClass: '',
+    imageUploading: false,
   },
   mapStoreToData,
   async onLoad(query) {
@@ -112,8 +127,14 @@ createPage({
         getCategoriesByMenu(activeMenuId),
         getOptionsByMenu(activeMenuId),
       ]);
+      const normalizedOptionsData = options.map((option) => ({
+        ...option,
+        choiceSummary: Array.isArray(option.choices)
+          ? option.choices.map((choice) => choice.label).join(' / ')
+          : '',
+      }));
       const categoryPicker = categories.map((item) => item.name);
-      this.setData({ categories, options, categoryPicker });
+      this.setData({ categories, options: normalizedOptionsData, categoryPicker });
 
       if (query?.id) {
         const dish = await getDishDetail(query.id);
@@ -123,8 +144,7 @@ createPage({
           dishId: query.id,
           form: {
             name: dish.name,
-            price: String(dish.price),
-            stock: String(dish.stock || 0),
+            price: (Number(dish.price ?? 0)).toFixed(1),
             status: dish.status === 'on',
             categoryId: dish.categoryId,
             image: dish.image,
@@ -224,13 +244,126 @@ createPage({
       });
     },
     async loadRecipe(recipeId) {
+      if (!recipeId) {
+        this.setData({ recipe: null, recipeMissing: false });
+        return;
+      }
       try {
         const recipe = await getRecipeById(recipeId);
-        this.setData({ recipe });
+        this.setData({ recipe, recipeMissing: false });
       } catch (error) {
         console.error('加载菜谱失败', error);
-        this.setData({ recipe: null });
+        this.setData({ recipe: null, recipeMissing: true });
       }
+    },
+    setDishImage(value) {
+      this.setData({
+        form: {
+          ...this.data.form,
+          image: value,
+        },
+      });
+    },
+    async onChooseImage() {
+      if (this.data.imageUploading) {
+        return;
+      }
+      if (!wx.cloud || typeof wx.cloud.uploadFile !== 'function') {
+        wx.showToast({ title: '云能力不可用', icon: 'none' });
+        return;
+      }
+      const chooseImage = wx.chooseMedia
+        ? () =>
+            wx.chooseMedia({
+              count: 1,
+              mediaType: ['image'],
+              sizeType: ['compressed'],
+            })
+        : () =>
+            wx.chooseImage({
+              count: 1,
+              sizeType: ['compressed'],
+            });
+      let tempFilePath = '';
+      let fileSize = 0;
+      try {
+        const res = await chooseImage();
+        if (!res) {
+          return;
+        }
+        if (res.tempFiles && res.tempFiles.length) {
+          tempFilePath = res.tempFiles[0].tempFilePath;
+          fileSize = res.tempFiles[0].size || 0;
+        } else if (res.tempFilePaths && res.tempFilePaths.length) {
+          tempFilePath = res.tempFilePaths[0];
+        }
+        if (!tempFilePath) {
+          return;
+        }
+      } catch (error) {
+        if (error && error.errMsg && error.errMsg.includes('cancel')) {
+          return;
+        }
+        console.error('选择菜品图片失败', error);
+        wx.showToast({ title: '选择失败', icon: 'none' });
+        return;
+      }
+      if (fileSize && fileSize > MAX_DISH_IMAGE_FILE_SIZE) {
+        wx.showToast({ title: '图片不能超过10MB', icon: 'none' });
+        return;
+      }
+      await this.uploadDishImage(tempFilePath);
+    },
+    async uploadDishImage(tempFilePath) {
+      if (!tempFilePath) {
+        return;
+      }
+      if (!wx.cloud || typeof wx.cloud.uploadFile !== 'function') {
+        wx.showToast({ title: '云能力不可用', icon: 'none' });
+        return;
+      }
+      const { activeMenuId } = store.getState();
+      const menuId = activeMenuId || 'menu';
+      const timestamp = Date.now();
+      const random = Math.random().toString(36).slice(2, 8);
+      const extMatch = /\.([a-zA-Z0-9]+)(\?.*)?$/.exec(tempFilePath);
+      const ext = extMatch ? extMatch[1] : 'jpg';
+      const cloudPath = `${DISH_IMAGE_DIR}/${menuId}-${timestamp}-${random}.${ext}`;
+      this.setData({ imageUploading: true });
+      wx.showLoading({ title: '上传中', mask: true });
+      try {
+        const result = await wx.cloud.uploadFile({
+          cloudPath,
+          filePath: tempFilePath,
+        });
+        if (!result || !result.fileID) {
+          throw new Error('missing_file_id');
+        }
+        this.setDishImage(result.fileID);
+        wx.showToast({ title: '上传成功', icon: 'success' });
+      } catch (error) {
+        console.error('上传菜品图片失败', error);
+        wx.showToast({ title: '上传失败', icon: 'none' });
+      } finally {
+        wx.hideLoading();
+        this.setData({ imageUploading: false });
+      }
+    },
+    onPreviewImage() {
+      const { image } = this.data.form;
+      if (!image) {
+        return;
+      }
+      wx.previewImage({
+        urls: [image],
+        current: image,
+      });
+    },
+    onClearImage() {
+      if (!this.data.form.image) {
+        return;
+      }
+      this.setDishImage('');
     },
     onSelectRecipe() {
       wx.navigateTo({
@@ -254,6 +387,7 @@ createPage({
             this.setData({
               form: { ...form, ...updates },
               recipe,
+              recipeMissing: false,
             });
             
             wx.showToast({ title: '已关联菜谱', icon: 'success' });
@@ -262,7 +396,14 @@ createPage({
       });
     },
     onViewRecipe() {
-      const { form } = this.data;
+      const { form, recipeMissing } = this.data;
+      if (!form.recipeId) {
+        return;
+      }
+      if (recipeMissing) {
+        wx.showToast({ title: '关联的菜谱已删除', icon: 'none' });
+        return;
+      }
       if (form.recipeId) {
         wx.navigateTo({
           url: `/pages/user/recipe-detail/index?recipeId=${form.recipeId}`,
@@ -277,7 +418,6 @@ createPage({
       const {
         name,
         price,
-        stock,
         status,
         categoryId,
         image,
@@ -294,14 +434,9 @@ createPage({
         this.showError('请选择所属分类');
         return;
       }
-      const priceValidation = parseNumberField(price, { allowFloat: true });
+      const priceValidation = parseNumberField(price, { allowFloat: true, maxDecimals: 1 });
       if (!priceValidation.valid) {
-        this.showError('价格必须设置为数字');
-        return;
-      }
-      const stockValidation = parseNumberField(stock, { allowFloat: false });
-      if (!stockValidation.valid) {
-        this.showError('库存必须为非负整数');
+        this.showError('价格必须为非负数字，且最多保留1位小数');
         return;
       }
       this.setData({ saving: true });
@@ -314,7 +449,6 @@ createPage({
           name,
           categoryId,
           price: priceValidation.value,
-          stock: stockValidation.value,
           status: status ? 'on' : 'off',
           image,
           description,

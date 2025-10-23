@@ -75,6 +75,30 @@
   line-height: 1.4;
 }
 
+.notification-meta {
+  margin-top: 8rpx;
+  padding-left: 48rpx;
+  display: flex;
+  gap: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+}
+
+.notification-meta__label {
+  color: var(--subtext-color);
+  position: relative;
+}
+
+.notification-meta__value {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.notification-meta__label::after {
+  content: '：';
+  margin-left: 4rpx;
+}
+
 .notification-empty {
   text-align: center;
   color: var(--subtext-color);

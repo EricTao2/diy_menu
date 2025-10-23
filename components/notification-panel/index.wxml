@@ -16,10 +16,16 @@
             <view class="unread-dot" wx:if="{{!item.read}}"></view>
           </view>
         </view>
-        <view class="notification-message" wx:if="{{item.payload}}">
-          <text wx:if="{{item.type === 'order:new'}}">您有新的订单需要处理</text>
-          <text wx:elif="{{item.type === 'order:status_changed'}}">订单状态已更新</text>
-          <text wx:else>{{item.payload.message || '系统通知'}}</text>
+        <view class="notification-message" wx:if="{{item.message}}">
+          <text>{{item.message}}</text>
+        </view>
+        <view class="notification-meta" wx:if="{{item.orderNo}}">
+          <text class="notification-meta__label">订单编号</text>
+          <text class="notification-meta__value">{{item.orderNo}}</text>
+        </view>
+        <view class="notification-meta" wx:if="{{item.statusText}}">
+          <text class="notification-meta__label">当前状态</text>
+          <text class="notification-meta__value">{{item.statusText}}</text>
         </view>
       </view>
     </block>

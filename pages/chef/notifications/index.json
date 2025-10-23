@@ -1,6 +1,6 @@
 {
   "usingComponents": {
-    "order-item": "/components/order-item/index",
+    "notification-panel": "/components/notification-panel/index",
     "custom-tab-bar": "/custom-tab-bar/index"
   }
 }

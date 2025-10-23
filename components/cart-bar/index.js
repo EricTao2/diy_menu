@@ -26,11 +26,11 @@ Component({
     },
   },
   data: {
-    totalText: '0.00',
+    totalText: '0.0',
   },
   observers: {
     totalPrice(val) {
-      const total = Number(val || 0).toFixed(2);
+      const total = Number(val || 0).toFixed(1);
       this.setData({ totalText: total });
     },
   },

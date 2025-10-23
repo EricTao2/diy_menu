@@ -5,6 +5,7 @@ import {
   updateMenuUserRoles,
   createMenuInvite,
   getMenusForCurrentUser,
+  getMenuDetail,
 } from '../../../services/api';
 import { ensureRole } from '../../../utils/auth';
 import { ADMIN_BOTTOM_TABS } from '../../../common/admin-tabs';
@@ -59,6 +60,7 @@ createPage({
     transitionClass: '',
     _shareExpiresAt: 0,
     _shareMenuName: '',
+    shareImage: '',
   },
   mapStoreToData,
   async onLoad() {
@@ -94,6 +96,37 @@ createPage({
       await this.fetchUsers({ reset: true });
       this.initialized = true;
       this.skipNextShowRefresh = true;
+    },
+    async ensureShareMenuAssets({ menuName } = {}) {
+      const state = store.getState();
+      if (!state.activeMenuId) {
+        return null;
+      }
+      const needImage = !this.data.shareImage;
+      const needName = !this.data._shareMenuName && menuName;
+      if (!needImage && !needName) {
+        return null;
+      }
+      try {
+        const menu = await getMenuDetail(state.activeMenuId);
+        if (!menu) {
+          return null;
+        }
+        const nextData = {};
+        if (needImage && menu.coverImage) {
+          nextData.shareImage = menu.coverImage;
+        }
+        if (!this.data._shareMenuName && menu.name) {
+          nextData._shareMenuName = menu.name;
+        }
+        if (Object.keys(nextData).length) {
+          this.setData(nextData);
+        }
+        return menu;
+      } catch (error) {
+        console.error('加载菜单信息失败', error);
+        return null;
+      }
     },
     async fetchUsers({ reset = false } = {}) {
       const state = store.getState();
@@ -153,10 +186,12 @@ createPage({
         return null;
       }
       if (!force && this.data.sharePath) {
+        await this.ensureShareMenuAssets({ menuName: this.data._shareMenuName });
         return {
           path: this.data.sharePath,
           expiresAt: this.data._shareExpiresAt,
           menuName: this.data._shareMenuName,
+          shareImage: this.data.shareImage,
         };
       }
       const invite = await createMenuInvite(state.activeMenuId, 'customer');
@@ -166,7 +201,11 @@ createPage({
         _shareExpiresAt: invite.expiresAt || 0,
         _shareMenuName: invite.menuName || '',
       });
-      return invite;
+      await this.ensureShareMenuAssets({ menuName: invite.menuName });
+      return {
+        ...invite,
+        shareImage: this.data.shareImage,
+      };
     },
     async onEditUser(event) {
       const { userId } = event.currentTarget.dataset;
@@ -303,17 +342,26 @@ createPage({
         const title = invite.menuName
           ? `邀请你加入「${invite.menuName}」菜单`
           : '邀请你加入菜单';
-        return {
+        const payload = {
           title,
           path: invite.path || fallbackPath,
         };
+        const shareImage = invite.shareImage || this.data.shareImage;
+        if (shareImage) {
+          payload.imageUrl = shareImage;
+        }
+        return payload;
       })
       .catch((error) => {
         console.error('分享链接生成失败', error);
-        return {
+        const payload = {
           title: 'DIY菜单',
           path: `/pages/menu-selector/index?menuId=${state.activeMenuId}`,
         };
+        if (this.data.shareImage) {
+          payload.imageUrl = this.data.shareImage;
+        }
+        return payload;
       });
   },
 });

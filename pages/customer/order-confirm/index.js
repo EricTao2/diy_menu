@@ -9,8 +9,10 @@ import {
 } from '../../../services/api';
 import { formatCurrency } from '../../../utils/format';
 import { ensureRole } from '../../../utils/auth';
+import { showCustomerToast } from '../../../utils/toast';
 const app = getApp();
 const store = app.getStore();
+const ORDER_SUCCESS_REDIRECT_DELAY = 1600;
 
 const mapStoreToData = (state) => ({
   theme: state.theme,
@@ -22,8 +24,16 @@ const mapStoreToData = (state) => ({
 const buildDishAvailability = (dish) => {
   if (!dish) return 'unavailable';
   if (dish.status !== 'on') return 'off';
-  if (dish.stockStatus === 'soldOut' || dish.soldOut) return 'soldOut';
+  if (dish.soldOut) return 'soldOut';
   return 'available';
+};
+
+const normalizePrice = (value) => {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) {
+    return 0;
+  }
+  return Math.round(number * 10) / 10;
 };
 
 createPage({
@@ -31,7 +41,7 @@ createPage({
     cart: null,
     menu: null,
     itemsView: [],
-    totalText: '0.00',
+    totalText: formatCurrency(0),
     form: {
       remark: '',
       tableNo: '',
@@ -59,7 +69,7 @@ createPage({
         getDishesByMenu(state.activeMenuId),
       ]);
       if (!cart.items.length) {
-        wx.showToast({ title: '购物车为空，去菜单看看', icon: 'none' });
+        showCustomerToast({ title: '购物车为空，去菜单看看' });
         wx.navigateBack();
         return;
       }
@@ -103,12 +113,18 @@ createPage({
           image: dish?.image || dish?.coverImage || dish?.cover || '',
           priceText: formatCurrency(item.priceSnapshot),
           totalText: formatCurrency(item.priceSnapshot * item.quantity),
-          options: item.optionsSnapshot
+        options: item.optionsSnapshot
             ? Object.keys(item.optionsSnapshot).map((optionId) => {
-                const option = item.optionsSnapshot[optionId];
+                const option = item.optionsSnapshot[optionId] || {};
+                const displayLabel = option.selectedLabel || option.selectedValue || '';
                 return {
-                  label: `${option.name}: ${option.selectedLabel}`,
-                  value: option.selectedValue,
+                  id: optionId,
+                  name: option.name || '',
+                  value: option.selectedValue || '',
+                  label: displayLabel,
+                  text: displayLabel
+                    ? `${option.name || ''}：${displayLabel}`
+                    : option.name || '',
                 };
               })
             : [],
@@ -135,29 +151,35 @@ createPage({
       try {
         const state = store.getState();
         const { cart, form } = this.data;
-        const orderItems = cart.items.map((item) => ({
-          dishId: item.dishId,
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.priceSnapshot,
-          optionsSnapshot: item.optionsSnapshot,
-        }));
+        const orderItems = cart.items.map((item) => {
+          const unitPrice = normalizePrice(item.priceSnapshot);
+          return {
+            dishId: item.dishId,
+            name: item.name,
+            quantity: item.quantity,
+            unitPrice,
+            optionsSnapshot: item.optionsSnapshot,
+          };
+        });
+        const totalPrice = cart.items.reduce(
+          (sum, item) => sum + normalizePrice(item.priceSnapshot) * (item.quantity || 0),
+          0
+        );
         await submitOrder({
           menuId: state.activeMenuId,
           userId: state.user.id,
           items: orderItems,
-          totalPrice: cart.items.reduce(
-            (sum, item) => sum + item.priceSnapshot * item.quantity,
-            0
-          ),
+          totalPrice,
           remark: form.remark,
           tableNo: form.tableNo,
         });
-        wx.showToast({ title: '下单成功', icon: 'success' });
-        wx.redirectTo({ url: '/pages/customer/order-history/index' });
+        showCustomerToast({ title: '下单成功', type: 'success' });
+        setTimeout(() => {
+          wx.redirectTo({ url: '/pages/customer/order-history/index' });
+        }, ORDER_SUCCESS_REDIRECT_DELAY);
       } catch (error) {
         console.error('提交订单失败', error);
-        wx.showToast({ title: '操作失败', icon: 'none' });
+        showCustomerToast({ title: '操作失败', type: 'error' });
       } finally {
         this.setData({ submitting: false });
       }

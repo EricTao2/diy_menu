@@ -1,4 +1,4 @@
-<view class="order-card" wx:if="{{orderView}}">
+<view class="order-card" wx:if="{{orderView}}" bindtap="onCardTap" data-order-id="{{orderView.id}}">
   <view class="order-header">
     <view>
       <text class="order-no">{{orderView.orderNo}}</text>
@@ -13,8 +13,8 @@
         <text class="item-price">¥{{orderItem.totalPriceText}}</text>
       </view>
       <view class="item-options" wx:if="{{orderItem.optionsArray.length}}">
-        <block wx:for="{{orderItem.optionsArray}}" wx:key="label" wx:for-item="option">
-          <text class="option-text">{{option.label}}：{{option.value}}</text>
+        <block wx:for="{{orderItem.optionsArray}}" wx:key="text" wx:for-item="option">
+          <text class="option-text">{{option.text}}</text>
         </block>
       </view>
     </block>
@@ -23,10 +23,9 @@
     <text class="order-total">¥{{orderView.totalPriceText}}</text>
     <view class="order-actions">
       <block wx:if="{{showActions}}">
-        <button class="secondary" wx:if="{{secondaryActionText}}" bindtap="onSecondary">{{secondaryActionText}}</button>
-        <button class="primary" wx:if="{{actionText}}" bindtap="onPrimary">{{actionText}}</button>
+        <button class="secondary" wx:if="{{secondaryActionText}}" data-action="secondary" bindtap="onActionTap">{{secondaryActionText}}</button>
+        <button class="primary" wx:if="{{actionText}}" data-action="primary" bindtap="onActionTap">{{actionText}}</button>
       </block>
-      <button bindtap="onView">{{viewText}}</button>
     </view>
   </view>
 </view>

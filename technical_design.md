@@ -266,7 +266,7 @@
 | `menus` | `_id`, `name`, `description`, `coverImage`, `defaultCategoryId`, `theme`, `status`, `createdAt` | 菜单基础信息，`coverImage` 存储云文件ID或完整图片 URL。 |
 | `categories` | `_id`, `menuId`, `name`, `sortOrder`, `createdAt`, `updatedAt` | 分类信息；`sortOrder` 用于自定义排序。 |
 | `options` | `_id`, `menuId`, `name`, `choices`(数组: `{label, value, sortOrder}`), `defaultChoice`, `createdAt` | 菜单级自定义选项库。 |
-| `dishes` | `_id`, `menuId`, `categoryId`, `name`, `description`, `image`, `price`, `status`, `tags`, `optionIds`(数组), `stock`, `sortOrder`, `recipeId`, `createdAt`, `updatedAt` | 菜品数据，包含排序权重与可选项关联。新增 `recipeId`（可为空）用于关联用户菜谱。 |
+| `dishes` | `_id`, `menuId`, `categoryId`, `name`, `description`, `image`, `price`, `status`, `tags`, `optionIds`(数组), `sortOrder`, `recipeId`, `createdAt`, `updatedAt` | 菜品数据，包含排序权重与可选项关联。新增 `recipeId`（可为空）用于关联用户菜谱。 |
 | `recipes` | `_id`, `userId`, `name`, `coverImage`, `content`, `ingredients`(数组: `{ingredientId, name, quantity, unit, image}`), `createdAt`, `updatedAt` | 用户级菜谱数据；`ingredients` 为原材料快照数组。 |
 | `ingredients` | `_id`, `userId`, `name`, `unit`, `image`, `remark`, `createdAt`, `updatedAt` | 用户级原材料数据。 |
 | `carts` | `_id`, `menuId`, `userId`, `items`(数组: `{dishId, quantity, optionsSnapshot, priceSnapshot}`), `updatedAt` | 用户购物车；`optionsSnapshot` 为完整选项快照，格式：`{optionId: {name, choices: [{label, value, sortOrder}], selectedValue, selectedLabel}}`，确保历史数据完整可追溯。 |
@@ -297,7 +297,7 @@
 | `categoryService` | 分类增删改查、排序更新 | Input: 操作类型与数据 | 内部校验管理员权限。 |
 | `optionService` | 自定义选项增删改查 | Input: 操作类型与数据 | 维护选项与排序。 |
 | `dishService` | 菜品增删改查、上下架、排序 | Input: 操作类型与数据 | 同步维护 `sortOrder`。 |
-| `cartService` | 购物车增删改查 | Input: `menuId`, `items` | 确保数据一致性，校验库存。 |
+| `cartService` | 购物车增删改查 | Input: `menuId`, `items` | 确保数据一致性，生成下单所需快照。 |
 | `orderService` | 提交订单、状态更新、历史查询 | Input: 操作类型、订单数据 | 下单校验、生成编号、写入订单、触发通知。 |
 | `getNotifications` | 获取用户通知列表 | Input: `menuId`, `type`, `page`, `pageSize` | 只返回当前用户的通知，支持分页和类型筛选。 |
 | `markNotificationRead` | 标记通知已读 | Input: `notificationId` | 用户只能标记自己的通知为已读。 |
@@ -317,7 +317,7 @@
 - 菜单管理工作台（`pages/admin/menu-designer/`）在前端维护分类与菜品的本地排序列表，拖拽结束后调用 `sortCategories`/`sortDishes` 持久化 `sortOrder`，失败时回滚并提示。列表中的菜品卡片上下文仅提供"编辑"入口（取消快捷上下架），并以多行布局展示菜品名与价格。如果菜品关联了菜谱，显示"有菜谱"标识（仅管理员和厨师可见）。
 - 滚动锁定实现依赖顶部哨兵节点 + `IntersectionObserver` 监控，锁定后页面高度通过实时测量（含自定义 tabbar 与安全区）计算，分类/菜品列使用 `scroll-view` 并基于手势桥接策略与整页切换滚动控制，保证锁定状态下铺满视窗且解锁无闪动。
 - 在菜单页面加载时调用 `getMenuRoles` 刷新当前菜单可用角色，`role-switcher` 监听 `App.globalData.currentRole` 与 `currentMenuId`，切换身份时触发统一的 `onRoleChange` 回调以更新页面按钮、入口并保留分类位置、搜索条件、购物车数据。
-- 前端提交表单前需校验所有业务上为数字类型的输入框（如价格、库存、排序权重、原材料数量等），必须符合非负数/整数等约束才允许向后端发起请求；若校验失败，使用居中浮层提示框展示错误原因，可点击遮罩关闭，并在 2 秒后自动消失。
+- 前端提交表单前需校验所有业务上为数字类型的输入框（如价格、排序权重、原材料数量等），必须符合非负数/整数等约束才允许向后端发起请求；若校验失败，使用居中浮层提示框展示错误原因，可点击遮罩关闭，并在 2 秒后自动消失。
 - 菜单、分类、菜品数据支持本地缓存与失效策略，避免频繁请求。
 - 购物车使用本地缓存与云端同步结合，保证切换设备时数据一致。
 - **菜谱系统**：
@@ -381,7 +381,7 @@
 - **提供统一 `NotificationManager`** 处理显示、已读状态、失败重试。
 
 ## 10. 并发与一致性策略
-- 下单时云函数内事务（`db.runTransaction`）校验菜品库存状态、获取菜品最新价格与选项，保存快照。
+- 下单时云函数内事务（`db.runTransaction`）校验菜品上下架状态、获取菜品最新价格与选项，并保存快照。
 - 购物车在提交订单前再次校验菜品状态，并给出提示（菜品下架或价格变更）。
 - 分类、菜品排序更新使用递增的 `sortOrder`，前端拖拽后批量提交更新。
 

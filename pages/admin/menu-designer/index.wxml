@@ -117,7 +117,9 @@
                       <view class="dish-card__content">
                         <view class="dish-card__header">
                           <text class="dish-card__name">{{dish.name}}</text>
-                          <text class="dish-card__recipe" wx:if="{{dish.recipeId}}">📖 有菜谱</text>
+                        </view>
+                        <view class="dish-card__recipe-row" wx:if="{{dish.recipeId}}">
+                          <text class="dish-card__recipe">📖 有菜谱</text>
                         </view>
                         <text class="dish-card__price">{{dish.priceText}}</text>
                         <text class="dish-card__desc" wx:if="{{dish.description}}">{{dish.description}}</text>

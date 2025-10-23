@@ -8,12 +8,36 @@
     </view>
     <view class="items">
       <block wx:for="{{order.items}}" wx:key="dishId" wx:for-item="item">
-        <view class="item-row">
-          <text class="item-name">{{item.name}} × {{item.quantity}}</text>
-          <text class="item-total">{{item.totalText}}</text>
-        </view>
-        <view class="item-options" wx:if="{{item.options.length}}">
-          <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}} </text>
+        <view class="item-card">
+          <view class="item-media">
+            <image src="{{item.image || '/images/default-dish.png'}}" mode="aspectFill"></image>
+          </view>
+          <view class="item-body">
+            <view class="item-header">
+              <text class="item-name">{{item.name}}</text>
+              <text class="item-quantity">× {{item.quantity}}</text>
+            </view>
+            <view class="item-info" wx:if="{{item.options.length || item.hasRecipe}}">
+              <view class="item-options" wx:if="{{item.options.length}}">
+                <block wx:for="{{item.options}}" wx:key="text" wx:for-item="option">
+                  <text class="item-option">{{option.text}}</text>
+                </block>
+              </view>
+              <button
+                wx:if="{{item.hasRecipe}}"
+                class="item-recipe-btn item-recipe-btn--inline"
+                size="mini"
+                data-recipe-id="{{item.recipeId}}"
+                bindtap="onViewRecipe"
+              >
+                菜谱
+              </button>
+            </view>
+            <view class="item-footer">
+              <text class="item-unit">{{item.unitPriceText}}</text>
+              <text class="item-total">{{item.totalText}}</text>
+            </view>
+          </view>
         </view>
       </block>
     </view>
@@ -31,10 +55,9 @@
       ></textarea>
       <button class="secondary" bindtap="onSaveRemark">保存备注</button>
     </view>
-    <view class="actions">
-      <button class="primary" wx:if="{{order.status === 'new'}}" bindtap="onMarkProcessing">开始处理</button>
-      <button class="primary" wx:if="{{order.status === 'processing'}}" bindtap="onMarkComplete">完成订单</button>
-      <button class="danger" wx:if="{{order.status === 'processing'}}" bindtap="onMarkCancel">取消订单</button>
+    <view class="order-total">
+      <text class="order-total__label">订单总价</text>
+      <text class="order-total__value">{{order.totalPriceText}}</text>
     </view>
   </view>
 </view>

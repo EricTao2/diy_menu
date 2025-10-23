@@ -21,6 +21,7 @@
     "pages/customer/order-history/index",
     "pages/customer/notifications/index",
     "pages/chef/order-list/index",
+    "pages/chef/notifications/index",
     "pages/chef/order-detail/index",
     "pages/common/order-detail/index"
   ],

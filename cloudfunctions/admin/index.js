@@ -82,14 +82,11 @@ const createUserNotifications = async (menuId, userIds, type, payload) => {
     createdAt: now
   }));
   
-  // 批量插入通知
-  const batch = db.batch();
-  notifications.forEach(notification => {
-    const docRef = db.collection(COLLECTIONS.USER_NOTIFICATIONS).doc(notification.id);
-    batch.set(docRef, { data: notification });
-  });
-  
-  await batch.commit();
+  const collection = db.collection(COLLECTIONS.USER_NOTIFICATIONS);
+  await Promise.all(
+    notifications.map((notification) => collection.doc(notification.id).set({ data: notification }))
+  );
+  return notifications.length;
 };
 
 const getDocumentById = async (collection, id) => {
@@ -278,7 +275,6 @@ const ensureBootstrapData = async (ctx) => {
         status: 'on',
         tags: ['招牌', '川菜'],
         optionIds: ['opt-001', 'opt-002'],
-        stock: 20,
         sortOrder: 10,
       },
       {
@@ -291,7 +287,6 @@ const ensureBootstrapData = async (ctx) => {
         status: 'on',
         tags: ['热销'],
         optionIds: ['opt-001'],
-        stock: 50,
         sortOrder: 20,
       },
       {
@@ -304,7 +299,6 @@ const ensureBootstrapData = async (ctx) => {
         status: 'on',
         tags: ['凉菜'],
         optionIds: ['opt-001'],
-        stock: 30,
         sortOrder: 10,
       },
     ];
@@ -320,7 +314,6 @@ const ensureBootstrapData = async (ctx) => {
         status: dish.status,
         tags: dish.tags,
         optionIds: dish.optionIds,
-        stock: dish.stock,
         sortOrder: dish.sortOrder,
         createdAt: now,
         updatedAt: now,
@@ -955,24 +948,42 @@ const handlers = {
       'status',
       'tags',
       'optionIds',
-      'stock',
     ]);
     data.optionIds = Array.isArray(data.optionIds)
       ? Array.from(new Set(data.optionIds.map(String)))
       : [];
     data.tags = Array.isArray(data.tags) ? data.tags : [];
     data.updatedAt = now;
+    const hasRecipeField = Object.prototype.hasOwnProperty.call(dish, 'recipeId');
+    const recipeIdValue =
+      typeof dish.recipeId === 'string'
+        ? dish.recipeId.trim()
+        : dish.recipeId
+        ? String(dish.recipeId).trim()
+        : '';
     if (dish.id) {
-      await db.collection(COLLECTIONS.DISHES).doc(dish.id).update({ data });
+      const updateData = { ...data };
+      if (hasRecipeField) {
+        if (recipeIdValue) {
+          updateData.recipeId = recipeIdValue;
+        } else {
+          updateData.recipeId = _.remove();
+        }
+      }
+      await db.collection(COLLECTIONS.DISHES).doc(dish.id).update({ data: updateData });
       const updated = await getDocumentById(COLLECTIONS.DISHES, dish.id);
       return updated;
     }
     const id = generateId('dish');
-    data.id = id;
-    data.createdAt = now;
-    data.sortOrder = now;
-    await db.collection(COLLECTIONS.DISHES).doc(id).set({ data });
-    return data;
+    const createData = { ...data };
+    if (hasRecipeField && recipeIdValue) {
+      createData.recipeId = recipeIdValue;
+    }
+    createData.id = id;
+    createData.createdAt = now;
+    createData.sortOrder = now;
+    await db.collection(COLLECTIONS.DISHES).doc(id).set({ data: createData });
+    return createData;
   },
 
   deleteDish: async (ctx, payload) => {
@@ -1120,15 +1131,12 @@ const handlers = {
       if (dish.status !== 'on') {
         throw new CloudFunctionError('dish_unavailable', `Dish ${dish.name} is not available`);
       }
-      if (dish.stock !== -1 && dish.stock < item.quantity) {
-        throw new CloudFunctionError('insufficient_stock', `Insufficient stock for ${dish.name}`);
-      }
-      
       const orderItem = {
         dishId: item.dishId,
         name: dish.name,
         quantity: item.quantity,
         unitPrice: dish.price,
+        recipeId: dish.recipeId || '',
         optionsSnapshot: item.optionsSnapshot || {},
       };
       
@@ -1162,19 +1170,6 @@ const handlers = {
       // 创建订单
       await transaction.collection(COLLECTIONS.ORDERS).doc(orderId).set({ data: order });
       
-      // 更新库存
-      for (const item of items) {
-        const dish = dishMap.get(item.dishId);
-        if (dish.stock !== -1) {
-          await transaction.collection(COLLECTIONS.DISHES).doc(item.dishId).update({
-            data: { 
-              stock: _.inc(-item.quantity),
-              updatedAt: now 
-            }
-          });
-        }
-      }
-      
       // 清空购物车
       const cartRes = await transaction.collection(COLLECTIONS.CARTS)
         .where({ menuId, userId })
@@ -1186,17 +1181,37 @@ const handlers = {
         });
       }
       
-      // 创建通知 - 只发送给厨师
-      const chefUsers = await getMenuUsersByRoles(menuId, ['chef']);
-      await createUserNotifications(
-        menuId, 
-        chefUsers, 
-        'order:new', 
-        { orderId, orderNo }
-      );
-      
       return order;
     });
+    
+    (async () => {
+      try {
+        const chefUsers = await getMenuUsersByRoles(menuId, ['chef']);
+        if (!chefUsers || chefUsers.length === 0) {
+          console.info('[notifications] order:new skipped - no chef users', {
+            menuId,
+            orderId,
+          });
+          return;
+        }
+        const recipientCount = await createUserNotifications(menuId, chefUsers, 'order:new', {
+          orderId,
+          orderNo,
+        });
+        console.info('[notifications] order:new dispatched', {
+          menuId,
+          orderId,
+          recipientCount,
+        });
+      } catch (error) {
+        console.error('[notifications] order:new failed', {
+          menuId,
+          orderId,
+          error: error && error.message,
+          stack: error && error.stack,
+        });
+      }
+    })();
     
     return normalizeDoc(result);
   },
@@ -1235,8 +1250,60 @@ const handlers = {
     }
     
     const res = await query.orderBy('createdAt', 'desc').get();
+    const orders = res.data.map((doc) => normalizeDoc({ ...doc }));
     
-    return res.data.map(normalizeDoc);
+    if (!orders.length) {
+      return orders;
+    }
+    
+    const dishIdSet = new Set();
+    orders.forEach((order) => {
+      if (Array.isArray(order.items)) {
+        order.items.forEach((item) => {
+          if (item && item.dishId) {
+            dishIdSet.add(item.dishId);
+          }
+        });
+      }
+    });
+    
+    const dishIds = Array.from(dishIdSet);
+    const dishMap = new Map();
+    if (dishIds.length) {
+      const chunkSize = 10;
+      for (let index = 0; index < dishIds.length; index += chunkSize) {
+        const slice = dishIds.slice(index, index + chunkSize);
+        const dishRes = await db
+          .collection(COLLECTIONS.DISHES)
+          .where({ _id: _.in(slice), menuId })
+          .get();
+        dishRes.data.forEach((dishDoc) => {
+          const normalized = normalizeDoc({ ...dishDoc });
+          dishMap.set(normalized.id, normalized);
+        });
+      }
+    }
+    
+    return orders.map((order) => {
+      if (!Array.isArray(order.items) || !order.items.length) {
+        return order;
+      }
+      const items = order.items.map((item) => {
+        const dish = dishMap.get(item.dishId);
+        const recipeId = item.recipeId || dish?.recipeId || '';
+        if (!recipeId) {
+          return item;
+        }
+        return {
+          ...item,
+          recipeId,
+        };
+      });
+      return {
+        ...order,
+        items,
+      };
+    });
   },
 
   updateOrderStatus: async (ctx, payload) => {

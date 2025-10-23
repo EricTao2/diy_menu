@@ -1,6 +1,6 @@
 const formatCurrency = (value) => {
   const number = Number(value || 0);
-  return number.toFixed(2);
+  return number.toFixed(1);
 };
 
 const formatTime = (timestamp) => {
@@ -59,10 +59,16 @@ Component({
           totalPriceText: formatCurrency(item.unitPrice * item.quantity),
           optionsArray: item.optionsSnapshot
             ? Object.keys(item.optionsSnapshot).map((optionId) => {
-                const option = item.optionsSnapshot[optionId];
+                const option = item.optionsSnapshot[optionId] || {};
+                const displayLabel = option.selectedLabel || option.selectedValue || '';
                 return {
-                  label: `${option.name}: ${option.selectedLabel}`,
-                  value: option.selectedValue,
+                  id: optionId,
+                  name: option.name || '',
+                  value: option.selectedValue || '',
+                  label: displayLabel,
+                  text: displayLabel
+                    ? `${option.name || ''}：${displayLabel}`
+                    : option.name || '',
                 };
               })
             : [],
@@ -72,14 +78,23 @@ Component({
     },
   },
   methods: {
-    onView() {
+    onCardTap(event) {
+      const target = event?.target || {};
+      if (target?.dataset?.action) {
+        return;
+      }
       this.triggerEvent('view', { orderId: this.data.order?.id });
     },
-    onPrimary() {
-      this.triggerEvent('primary', { orderId: this.data.order?.id });
-    },
-    onSecondary() {
-      this.triggerEvent('secondary', { orderId: this.data.order?.id });
+    onActionTap(event) {
+      const action = event.currentTarget?.dataset?.action;
+      if (!action) {
+        return;
+      }
+      if (action === 'primary') {
+        this.triggerEvent('primary', { orderId: this.data.order?.id });
+      } else if (action === 'secondary') {
+        this.triggerEvent('secondary', { orderId: this.data.order?.id });
+      }
     },
   },
 });

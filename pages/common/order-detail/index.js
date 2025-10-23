@@ -37,6 +37,12 @@ createPage({
   async onLoad(query) {
     this.orderId = query?.id || '';
     const currentRole = getGlobalRole();
+    if ((currentRole === 'admin' || currentRole === 'chef') && this.orderId) {
+      wx.redirectTo({
+        url: `/pages/chef/order-detail/index?id=${this.orderId}`,
+      });
+      return;
+    }
     const canViewRecipe = currentRole === 'admin' || currentRole === 'chef';
     this.setData({ currentRole, canViewRecipe });
     await this.loadOrder();
@@ -95,13 +101,19 @@ createPage({
             recipeId: dish?.recipeId || '',
             hasRecipe: !!dish?.recipeId,
             image: dish?.image || dish?.coverImage || dish?.cover || '',
+            unitPriceText: formatCurrency(item.unitPrice),
             totalText: formatCurrency(item.unitPrice * item.quantity),
             options: item.optionsSnapshot
               ? Object.keys(item.optionsSnapshot).map((optionId) => {
                   const option = item.optionsSnapshot[optionId];
                   return {
-                    label: `${option.name}: ${option.selectedLabel}`,
-                    value: option.selectedValue,
+                    id: optionId,
+                    name: option.name || '',
+                    value: option.selectedValue || '',
+                    label: option.selectedLabel || option.selectedValue || '',
+                    text: (option.selectedLabel || option.selectedValue)
+                      ? `${option.name || ''}：${option.selectedLabel || option.selectedValue}`
+                      : option.name || '',
                   };
                 })
               : [],

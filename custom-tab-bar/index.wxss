@@ -70,8 +70,8 @@
   background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
   color: white;
   border-radius: 50%;
-  min-width: 32rpx;
-  height: 32rpx;
+  min-width: 26rpx;
+  height: 38rpx;
   display: flex;
   align-items: center;
   justify-content: center;

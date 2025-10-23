@@ -2,6 +2,7 @@ import { createPage } from '../../../utils/page';
 import { resolveThemeClass } from '../../../utils/theme-helper';
 import { getDishDetail } from '../../../services/api';
 import { formatCurrency } from '../../../utils/format';
+import { showCustomerToast } from '../../../utils/toast';
 
 const app = getApp();
 const store = app.getStore();
@@ -21,7 +22,7 @@ createPage({
   async onLoad(options) {
     const dishId = options?.id;
     if (!dishId) {
-      wx.showToast({ title: '未找到菜品', icon: 'none' });
+      showCustomerToast({ title: '未找到菜品' });
       setTimeout(() => wx.navigateBack(), 500);
       return;
     }
@@ -32,7 +33,7 @@ createPage({
       try {
         const detail = await getDishDetail(dishId);
         if (!detail) {
-          wx.showToast({ title: '菜品不存在', icon: 'none' });
+          showCustomerToast({ title: '菜品不存在' });
           setTimeout(() => wx.navigateBack(), 500);
           return;
         }
@@ -47,7 +48,7 @@ createPage({
         this.setData({ dish, loading: false });
       } catch (error) {
         console.error('加载菜品详情失败', error);
-        wx.showToast({ title: '加载失败', icon: 'none' });
+        showCustomerToast({ title: '加载失败', type: 'error' });
         setTimeout(() => wx.navigateBack(), 500);
       }
     },

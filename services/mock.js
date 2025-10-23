@@ -91,7 +91,6 @@ const DEFAULT_DATA = {
       status: 'on',
       tags: ['招牌', '川菜'],
       optionIds: ['opt-001', 'opt-002'],
-      stock: 20,
       sortOrder: 10,
     },
     {
@@ -105,7 +104,6 @@ const DEFAULT_DATA = {
       status: 'on',
       tags: ['热销'],
       optionIds: ['opt-001'],
-      stock: 50,
       sortOrder: 20,
     },
     {
@@ -119,7 +117,6 @@ const DEFAULT_DATA = {
       status: 'on',
       tags: ['凉菜'],
       optionIds: ['opt-001'],
-      stock: 30,
       sortOrder: 10,
     },
     {
@@ -133,7 +130,6 @@ const DEFAULT_DATA = {
       status: 'on',
       tags: ['Brunch'],
       optionIds: ['opt-101'],
-      stock: 15,
       sortOrder: 10,
     },
   ],

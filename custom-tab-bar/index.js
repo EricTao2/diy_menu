@@ -4,6 +4,20 @@ Component({
   options: {
     addGlobalClass: true,
   },
+  data: {
+    iconMap: {
+      customerNotifications: '🔔',
+      customerMenu: '🍽️',
+      customerCart: '🛒',
+      customerOrders: '📋',
+      menuDesigner: '✏️',
+      menuSettings: '⚙️',
+      optionLibrary: '📚',
+      orderOverview: '📊',
+      chefOrders: '📋',
+      chefNotifications: '🔔',
+    },
+  },
   properties: {
     activeKey: {
       type: String,

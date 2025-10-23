@@ -19,13 +19,13 @@
               <text class="item-quantity">× {{item.quantity}}</text>
             </view>
             <view class="item-options" wx:if="{{item.options.length}}">
-              <block wx:for="{{item.options}}" wx:key="label" wx:for-item="option">
-                <text class="option-text">{{option.label}}: {{option.value}}</text>
+              <block wx:for="{{item.options}}" wx:key="text" wx:for-item="option">
+                <text class="option-text">{{option.text}}</text>
               </block>
             </view>
             <view class="item-price">
-              <text class="unit-price">¥{{item.unitPrice}}</text>
-              <text class="total-price">小计：¥{{item.totalText}}</text>
+              <text class="unit-price">{{item.unitPriceText}}</text>
+              <text class="total-price">小计：{{item.totalText}}</text>
             </view>
             <button
               wx:if="{{canViewRecipe && item.hasRecipe}}"
@@ -62,7 +62,7 @@
     <view class="order-total-section">
       <view class="total-amount">
         <text class="total-label">订单总价：</text>
-        <text class="total-value">¥{{order.totalPriceText}}</text>
+        <text class="total-value">{{order.totalPriceText}}</text>
       </view>
     </view>
   </view>

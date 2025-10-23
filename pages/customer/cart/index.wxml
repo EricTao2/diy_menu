@@ -10,7 +10,7 @@
             <text class="item-price">{{item.priceText}}</text>
           </view>
           <view class="item-options" wx:if="{{item.options.length}}">
-            <text wx:for="{{item.options}}" wx:key="label">{{item.label}}: {{item.value}}</text>
+            <text wx:for="{{item.options}}" wx:key="text">{{item.text}}</text>
           </view>
           <view class="item-actions">
             <input
@@ -25,7 +25,7 @@
         </view>
       </block>
       <view class="cart-footer">
-        <text>合计 ¥{{totalText}}</text>
+        <text>合计 {{totalText}}</text>
         <view class="footer-actions">
           <button bindtap="onClearCart">清空</button>
           <button class="primary" bindtap="onSubmit">提交订单</button>

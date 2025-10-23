@@ -4,6 +4,7 @@ import { getCart, updateCart, clearCart, getMenuDetail } from '../../../services
 import { formatCurrency } from '../../../utils/format';
 import { ensureRole } from '../../../utils/auth';
 import { CUSTOMER_BOTTOM_TABS } from '../../../common/customer-tabs';
+import { showCustomerToast } from '../../../utils/toast';
 
 const CUSTOMER_TAB_URL_MAP = CUSTOMER_BOTTOM_TABS.reduce((acc, tab) => {
   if (tab?.key) {
@@ -26,7 +27,7 @@ createPage({
     cart: null,
     menu: null,
     itemsView: [],
-    totalText: '0.00',
+    totalText: formatCurrency(0),
     customerTabs: CUSTOMER_BOTTOM_TABS,
   },
   mapStoreToData,
@@ -55,8 +56,8 @@ createPage({
     },
     formatCart() {
       const { cart } = this.data;
-      if (!cart) {
-        this.setData({ itemsView: [], totalText: '0.00' });
+      if (!cart || !Array.isArray(cart.items)) {
+        this.setData({ itemsView: [], totalText: formatCurrency(0) });
         return;
       }
       const itemsView = cart.items.map((item, index) => ({
@@ -64,13 +65,21 @@ createPage({
         index,
         priceText: formatCurrency(item.priceSnapshot),
         totalText: formatCurrency(item.priceSnapshot * item.quantity),
-        options: item.optionsSnapshot ? Object.keys(item.optionsSnapshot).map((optionId) => {
-          const option = item.optionsSnapshot[optionId];
-          return {
-            label: `${option.name}: ${option.selectedLabel}`,
-            value: option.selectedValue,
-          };
-        }) : [],
+        options: item.optionsSnapshot
+          ? Object.keys(item.optionsSnapshot).map((optionId) => {
+              const option = item.optionsSnapshot[optionId] || {};
+              const displayLabel = option.selectedLabel || option.selectedValue || '';
+              return {
+                id: optionId,
+                name: option.name || '',
+                value: option.selectedValue || '',
+                label: displayLabel,
+                text: displayLabel
+                  ? `${option.name || ''}：${displayLabel}`
+                  : option.name || '',
+              };
+            })
+          : [],
       }));
       const total = cart.items.reduce(
         (sum, item) => sum + (item.priceSnapshot || 0) * (item.quantity || 0),
@@ -104,7 +113,7 @@ createPage({
     },
     onSubmit() {
       if (!this.data.cart || !this.data.cart.items.length) {
-        wx.showToast({ title: '购物车为空，去菜单看看', icon: 'none' });
+        showCustomerToast({ title: '购物车为空，去菜单看看' });
         return;
       }
       wx.navigateTo({ url: '/pages/customer/order-confirm/index' });

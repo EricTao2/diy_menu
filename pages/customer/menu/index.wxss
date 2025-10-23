@@ -267,30 +267,10 @@
 
 .dish-card__actions {
   position: absolute;
-  right: 24rpx;
+  right: 15rpx;
   bottom: 8rpx;
   display: flex;
   align-items: center;
-}
-
-.dish-card__action-btn {
-  width: 54rpx;
-  height: 54rpx;
-  border-radius: 50%;
-  display: display;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6rpx 20rpx rgba(59, 130, 246, 0.28);
-  background: linear-gradient(135deg, #437af2dc, #437af2dc);
-  color: #ffffff;
-  border: none;
-  font-size: 52rpx;
-  line-height: 48rpx;
-  padding: 0;
-}
-
-.dish-card__action-btn::after {
-  border: none;
 }
 
 .dish-card__spec-btn {
@@ -302,7 +282,7 @@
   color: #ffffff;
   border: none;
   font-size: 26rpx;
-  line-height: 64rpx;
+  line-height: 58rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,41 +313,55 @@
 .dish-card__quantity-controls {
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  padding: 8rpx 0rpx;
-  border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0);
-  box-shadow: 0 6rpx 18rpx rgba(255, 255, 255, 0);
+  gap: 8rpx;
+  height: 54rpx;
 }
 
 .dish-card__qty-btn {
-  width: 30rpx;
+  width: 54rpx;
   height: 54rpx;
   border-radius: 50%;
   border: none;
-  color: var(--text-color);
   font-size: 38rpx;
-  line-height: 64rpx;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #1b82e9dc, #1b82e9dc);
   color: #ffffff;
-  box-shadow: 0 6rpx 20rpx rgba(59, 130, 246, 0.28);
-  transform: translateY(10rpx);
 }
 
 .dish-card__qty-btn::after {
   border: none;
 }
 
+.dish-card__qty-symbol {
+  display: block;
+  line-height: 1;
+  font-size: 48rpx;
+  transform: translateY(-2rpx);
+}
+
+.dish-card__qty-btn--decrease,
+.dish-card__qty-btn--increase {
+  min-width: 54rpx;
+}
+
 .dish-card__qty-count {
   min-width: 48rpx;
-  text-align: center;
+  height: 54rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 30rpx;
   font-weight: 600;
   color: var(--text-color);
-  transform: translateY(-10rpx);
+  line-height: 5rpx;
+}
+
+.dish-card__qty-hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .scroll-spacer {
@@ -388,8 +382,8 @@
 
 .floating-checkout {
   position: fixed;
-  right: 32rpx;
-  bottom: 140rpx; /* 调整到tabbar上方，避免覆盖 */
+  right: 10rpx;
+  bottom: 130rpx; /* 调整到tabbar上方，避免覆盖 */
   padding: 16rpx 24rpx;
   background: linear-gradient(135deg, #3661ed 0%, #4f7af1 100%);
   color: #fff;
