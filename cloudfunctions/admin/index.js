@@ -198,19 +198,6 @@ const ensureBootstrapData = async (ctx) => {
 
   const menu = await getDocumentById(COLLECTIONS.MENUS, menuId);
   if (!menu) {
-    const menuDoc = {
-      id: menuId,
-      name: '渔火小馆',
-      description: '主打川菜与家常菜的共享菜单',
-      defaultCategoryId,
-      theme: 'light',
-      status: 'active',
-      coverImage: '',
-      createdAt: now,
-      updatedAt: now,
-    };
-    await menusCol.doc(menuId).set({ data: menuDoc });
-
     const categories = [
       { id: 'cat-001', name: '热菜', sortOrder: 10 },
       { id: 'cat-002', name: '凉菜', sortOrder: 20 },
