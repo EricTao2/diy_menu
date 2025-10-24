@@ -81,7 +81,7 @@ createPage({
     errorMessage: '',
     form: {
       name: '',
-      price: '',
+      price: '1',
       status: true,
       categoryId: '',
       image: '',

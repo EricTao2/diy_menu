@@ -62,7 +62,7 @@ createPage({
         title: `添加 ${name}`,
         editable: true,
         placeholderText: '请输入数量',
-        content: '',
+        content: '1',
       });
 
       if (!res.confirm || !res.content) {
