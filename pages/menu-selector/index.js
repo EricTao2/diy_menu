@@ -222,6 +222,10 @@ createPage({
     },
     onEnter() {
       const { selectedMenuId, selectedRole } = this.data;
+      if (!this.data.menus.length) {
+        wx.showToast({ title: '请先创建或加入菜单', icon: 'none' });
+        return;
+      }
       if (!this.isProfileCompleted()) {
         this.setData({ showProfileSetup: true });
         wx.showToast({ title: '请先完善昵称和头像', icon: 'none' });

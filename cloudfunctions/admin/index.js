@@ -43,6 +43,15 @@ class CloudFunctionError extends Error {
 }
 
 const generateId = (prefix) => `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+const DEFAULT_AVATAR_URL = 'https://dummyimage.com/160x160/e2e8f0/475569&text=DIY';
+const NICKNAME_PREFIXES = ['寻味', '鲜香', '食趣', '知味', '心选', '慢煮', '掌勺', '小食', '味觉', '家常'];
+const NICKNAME_SUFFIXES = ['食客', '厨友', '料理官', '味友', '点单师', '餐桌侠', '小主', '试味员', '品鉴官', '掌勺人'];
+const generateRandomNickname = () => {
+  const prefix = NICKNAME_PREFIXES[Math.floor(Math.random() * NICKNAME_PREFIXES.length)] || '食趣';
+  const suffix = NICKNAME_SUFFIXES[Math.floor(Math.random() * NICKNAME_SUFFIXES.length)] || '食客';
+  const tail = Math.floor(100 + Math.random() * 900);
+  return `${prefix}${suffix}${tail}`;
+};
 
 const normalizeDoc = (doc) => {
   if (!doc) {
@@ -52,6 +61,34 @@ const normalizeDoc = (doc) => {
     doc.id = doc._id;
   }
   return doc;
+};
+
+const ensureCollectionExists = async (collectionName) => {
+  try {
+    await db.collection(collectionName).limit(1).get();
+  } catch (error) {
+    const collectionMissing =
+      error &&
+      (error.errCode === -501007 ||
+        error.errCode === -502005 ||
+        error.errCode === 'DATABASE_COLLECTION_NOT_EXIST' ||
+        (error.errMsg && error.errMsg.includes('collection does not exist')));
+    if (!collectionMissing) {
+      throw error;
+    }
+    try {
+      await db.createCollection(collectionName);
+    } catch (createError) {
+      const alreadyExists =
+        createError &&
+        (createError.errCode === -502005 ||
+          createError.errCode === -503001 ||
+          createError.errMsg?.includes('already exists'));
+      if (!alreadyExists) {
+        throw createError;
+      }
+    }
+  }
 };
 
 // 获取菜单下指定角色的用户ID列表
@@ -110,29 +147,66 @@ const ensureUser = async (openid) => {
   const users = db.collection(COLLECTIONS.USERS);
   try {
     const existing = await users.doc(userId).get();
-    const user = normalizeDoc(existing.data);
-    if (typeof user.profileCompleted === 'undefined') {
-      const profileCompleted = Boolean(user.nickname && user.avatar);
-      await users.doc(userId).update({
-        data: {
-          profileCompleted,
-          updatedAt: Date.now(),
-        },
-      });
-      user.profileCompleted = profileCompleted;
-      user.updatedAt = Date.now();
+    let user = normalizeDoc(existing.data);
+    const patch = {};
+    const needsNickname = !user.nickname;
+    const needsAvatar = !user.avatar;
+    if (needsNickname) {
+      patch.nickname = generateRandomNickname();
+    }
+    if (needsAvatar) {
+      patch.avatar = DEFAULT_AVATAR_URL;
+    }
+    const shouldRecalculateCompletion =
+      needsNickname ||
+      needsAvatar ||
+      typeof user.profileCompleted === 'undefined' ||
+      user.profileCompleted === false;
+    if (shouldRecalculateCompletion) {
+      const effectiveNickname = patch.nickname || user.nickname;
+      const effectiveAvatar = patch.avatar || user.avatar;
+      patch.profileCompleted = Boolean(effectiveNickname && effectiveAvatar);
+    }
+    if (Object.keys(patch).length > 0) {
+      patch.updatedAt = now;
+      await users.doc(userId).update({ data: patch });
+      user = { ...user, ...patch };
     }
     return user;
   } catch (error) {
-    if ((error && error.errCode !== 'DOCUMENT_NOT_FOUND') && !(error && error.errMsg && error.errMsg.includes('document.get:fail'))) {
+    const docNotFound =
+      error &&
+      (error.errCode === 'DOCUMENT_NOT_FOUND' ||
+        (error.errMsg && error.errMsg.includes('document.get:fail')));
+    const collectionMissing =
+      error &&
+      (error.errCode === -501007 ||
+        error.errCode === -502005 ||
+        error.errCode === 'DATABASE_COLLECTION_NOT_EXIST' ||
+        (error.errMsg && error.errMsg.includes('collection does not exist')));
+    if (!docNotFound && !collectionMissing) {
       throw error;
+    }
+    if (collectionMissing) {
+      try {
+        await db.createCollection(COLLECTIONS.USERS);
+      } catch (createError) {
+        const alreadyExists =
+          createError &&
+          (createError.errCode === -502005 ||
+            createError.errCode === -503001 ||
+            createError.errMsg?.includes('already exists'));
+        if (!alreadyExists) {
+          throw createError;
+        }
+      }
     }
   }
   const user = {
     id: userId,
-    nickname: '',
-    avatar: '',
-    profileCompleted: false,
+    nickname: generateRandomNickname(),
+    avatar: DEFAULT_AVATAR_URL,
+    profileCompleted: true,
     createdAt: now,
     updatedAt: now,
     openid,
@@ -187,130 +261,24 @@ const upsertMenuRole = async (userId, menuId, roles) => {
   return normalizeDoc(roleDoc);
 };
 
-const ensureBootstrapData = async (ctx) => {
-  const now = Date.now();
-  const menuId = 'menu-001';
-  const defaultCategoryId = 'cat-001';
-  const menusCol = db.collection(COLLECTIONS.MENUS);
-  const categoriesCol = db.collection(COLLECTIONS.CATEGORIES);
-  const optionsCol = db.collection(COLLECTIONS.OPTIONS);
-  const dishesCol = db.collection(COLLECTIONS.DISHES);
-
-  const menu = await getDocumentById(COLLECTIONS.MENUS, menuId);
-  if (!menu) {
-    const categories = [
-      { id: 'cat-001', name: '热菜', sortOrder: 10 },
-      { id: 'cat-002', name: '凉菜', sortOrder: 20 },
-      { id: 'cat-003', name: '汤羹', sortOrder: 30 },
-    ];
-    for (const category of categories) {
-      const doc = {
-        id: category.id,
-        menuId,
-        name: category.name,
-        sortOrder: category.sortOrder,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await categoriesCol.doc(category.id).set({ data: doc });
-    }
-
-    const options = [
-      {
-        id: 'opt-001',
-        name: '辣度',
-        defaultChoice: 'mild',
-        choices: [
-          { label: '不辣', value: 'none', sortOrder: 10 },
-          { label: '微辣', value: 'mild', sortOrder: 20 },
-          { label: '中辣', value: 'medium', sortOrder: 30 },
-          { label: '特辣', value: 'hot', sortOrder: 40 },
-        ],
-      },
-      {
-        id: 'opt-002',
-        name: '份量',
-        defaultChoice: 'regular',
-        choices: [
-          { label: '小份', value: 'small', sortOrder: 10 },
-          { label: '常规', value: 'regular', sortOrder: 20 },
-          { label: '加大', value: 'large', sortOrder: 30 },
-        ],
-      },
-    ];
-    for (const option of options) {
-      const doc = {
-        id: option.id,
-        menuId,
-        name: option.name,
-        defaultChoice: option.defaultChoice,
-        choices: option.choices,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await optionsCol.doc(option.id).set({ data: doc });
-    }
-
-    const dishes = [
-      {
-        id: 'dish-001',
-        categoryId: 'cat-001',
-        name: '水煮鱼',
-        description: '麻辣鲜香的招牌水煮鱼',
-        image: 'https://dummyimage.com/300x200/d97706/ffffff&text=Fish',
-        price: 68,
-        status: 'on',
-        tags: ['招牌', '川菜'],
-        optionIds: ['opt-001', 'opt-002'],
-        sortOrder: 10,
-      },
-      {
-        id: 'dish-002',
-        categoryId: 'cat-001',
-        name: '宫保鸡丁',
-        description: '经典家常菜，酸甜微辣',
-        image: 'https://dummyimage.com/300x200/ef4444/ffffff&text=Kung+Pao',
-        price: 42,
-        status: 'on',
-        tags: ['热销'],
-        optionIds: ['opt-001'],
-        sortOrder: 20,
-      },
-      {
-        id: 'dish-003',
-        categoryId: 'cat-002',
-        name: '口水鸡',
-        description: '开胃凉菜，麻辣香浓',
-        image: 'https://dummyimage.com/300x200/f97316/ffffff&text=Chicken',
-        price: 32,
-        status: 'on',
-        tags: ['凉菜'],
-        optionIds: ['opt-001'],
-        sortOrder: 10,
-      },
-    ];
-    for (const dish of dishes) {
-      const doc = {
-        id: dish.id,
-        menuId,
-        categoryId: dish.categoryId,
-        name: dish.name,
-        description: dish.description,
-        image: dish.image,
-        price: dish.price,
-        status: dish.status,
-        tags: dish.tags,
-        optionIds: dish.optionIds,
-        sortOrder: dish.sortOrder,
-        createdAt: now,
-        updatedAt: now,
-      };
-      await dishesCol.doc(dish.id).set({ data: doc });
-    }
+const ensureBootstrapData = async () => {
+  const collectionsToEnsure = [
+    COLLECTIONS.USERS,
+    COLLECTIONS.MENUS,
+    COLLECTIONS.MENU_ROLES,
+    COLLECTIONS.MENU_INVITATIONS,
+    COLLECTIONS.CATEGORIES,
+    COLLECTIONS.OPTIONS,
+    COLLECTIONS.DISHES,
+    COLLECTIONS.CARTS,
+    COLLECTIONS.ORDERS,
+    COLLECTIONS.USER_NOTIFICATIONS,
+    COLLECTIONS.RECIPES,
+    COLLECTIONS.INGREDIENTS,
+  ];
+  for (const name of collectionsToEnsure) {
+    await ensureCollectionExists(name);
   }
-
-  await upsertMenuRole(ctx.user.id, menuId, ['admin', 'chef', 'customer']);
-  ctx.menuRoleMap = null;
   return true;
 };
 
@@ -402,8 +370,8 @@ const sanitizeOptionPayload = (option = {}) => {
 };
 
 const handlers = {
-  bootstrapData: async (ctx) => {
-    await ensureBootstrapData(ctx);
+  bootstrapData: async () => {
+    await ensureBootstrapData();
     return true;
   },
 

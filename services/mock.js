@@ -1,177 +1,42 @@
 const STORAGE_KEY = 'diy-menu-mock-db';
 const USER_KEY = 'diy-menu-current-user';
 
-const DEFAULT_USER = {
-  id: 'user-001',
-  nickname: '',
-  avatar: '',
-  profileCompleted: false,
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
+const DEFAULT_AVATAR_URL = 'https://dummyimage.com/160x160/e2e8f0/475569&text=DIY';
+const NICKNAME_PREFIXES = ['寻味', '鲜香', '食趣', '知味', '心选', '慢煮', '掌勺', '小食', '味觉', '家常'];
+const NICKNAME_SUFFIXES = ['食客', '厨友', '料理官', '味友', '点单师', '餐桌侠', '小主', '试味员', '品鉴官', '掌勺人'];
+
+const generateRandomNickname = () => {
+  const prefix = NICKNAME_PREFIXES[Math.floor(Math.random() * NICKNAME_PREFIXES.length)] || '食趣';
+  const suffix = NICKNAME_SUFFIXES[Math.floor(Math.random() * NICKNAME_SUFFIXES.length)] || '食客';
+  const tail = Math.floor(100 + Math.random() * 900);
+  return `${prefix}${suffix}${tail}`;
 };
+
+const createDefaultUser = (overrides = {}) => {
+  const now = Date.now();
+  return {
+    id: 'user-001',
+    nickname: generateRandomNickname(),
+    avatar: DEFAULT_AVATAR_URL,
+    profileCompleted: true,
+    createdAt: now,
+    updatedAt: now,
+    ...overrides,
+  };
+};
+
+const DEFAULT_USER = createDefaultUser();
 
 const DEFAULT_DATA = {
   users: [DEFAULT_USER],
-  menus: [
-    {
-      id: 'menu-001',
-      name: '渔火小馆',
-      description: '主打川菜与家常菜的共享菜单',
-      defaultCategoryId: 'cat-001',
-      theme: 'light',
-      status: 'active',
-      coverImage: '',
-    },
-    {
-      id: 'menu-002',
-      name: 'Daily Brunch',
-      description: '早午餐实验菜单',
-      defaultCategoryId: 'cat-101',
-      theme: 'forest',
-      status: 'active',
-      coverImage: '',
-    },
-  ],
-  menuRoles: [
-    { id: 'mr-001', menuId: 'menu-001', userId: 'user-001', roles: ['admin', 'chef', 'customer'] },
-    { id: 'mr-002', menuId: 'menu-002', userId: 'user-001', roles: ['customer'] },
-  ],
+  menus: [],
+  menuRoles: [],
   menuInvitations: [],
-  categories: [
-    { id: 'cat-001', menuId: 'menu-001', name: '热菜', sortOrder: 10 },
-    { id: 'cat-002', menuId: 'menu-001', name: '凉菜', sortOrder: 20 },
-    { id: 'cat-003', menuId: 'menu-001', name: '汤羹', sortOrder: 30 },
-    { id: 'cat-101', menuId: 'menu-002', name: 'Brunch Classics', sortOrder: 10 },
-  ],
-  options: [
-    {
-      id: 'opt-001',
-      menuId: 'menu-001',
-      name: '辣度',
-      defaultChoice: 'mild',
-      choices: [
-        { label: '不辣', value: 'none', sortOrder: 10 },
-        { label: '微辣', value: 'mild', sortOrder: 20 },
-        { label: '中辣', value: 'medium', sortOrder: 30 },
-        { label: '特辣', value: 'hot', sortOrder: 40 },
-      ],
-    },
-    {
-      id: 'opt-002',
-      menuId: 'menu-001',
-      name: '份量',
-      defaultChoice: 'regular',
-      choices: [
-        { label: '小份', value: 'small', sortOrder: 10 },
-        { label: '常规', value: 'regular', sortOrder: 20 },
-        { label: '加大', value: 'large', sortOrder: 30 },
-      ],
-    },
-    {
-      id: 'opt-101',
-      menuId: 'menu-002',
-      name: '蛋白偏好',
-      defaultChoice: null,
-      choices: [
-        { label: 'Bacon', value: 'bacon', sortOrder: 10 },
-        { label: 'Chicken Sausage', value: 'chicken_s', sortOrder: 20 },
-        { label: 'Smoked Salmon', value: 'salmon', sortOrder: 30 },
-      ],
-    },
-  ],
-  dishes: [
-    {
-      id: 'dish-001',
-      menuId: 'menu-001',
-      categoryId: 'cat-001',
-      name: '水煮鱼',
-      description: '麻辣鲜香的招牌水煮鱼',
-      image: 'https://dummyimage.com/300x200/d97706/ffffff&text=Fish',
-      price: 68,
-      status: 'on',
-      tags: ['招牌', '川菜'],
-      optionIds: ['opt-001', 'opt-002'],
-      sortOrder: 10,
-    },
-    {
-      id: 'dish-002',
-      menuId: 'menu-001',
-      categoryId: 'cat-001',
-      name: '宫保鸡丁',
-      description: '经典家常菜，酸甜微辣',
-      image: 'https://dummyimage.com/300x200/ef4444/ffffff&text=Kung+Pao',
-      price: 42,
-      status: 'on',
-      tags: ['热销'],
-      optionIds: ['opt-001'],
-      sortOrder: 20,
-    },
-    {
-      id: 'dish-003',
-      menuId: 'menu-001',
-      categoryId: 'cat-002',
-      name: '口水鸡',
-      description: '开胃凉菜，麻辣香浓',
-      image: 'https://dummyimage.com/300x200/f97316/ffffff&text=Chicken',
-      price: 32,
-      status: 'on',
-      tags: ['凉菜'],
-      optionIds: ['opt-001'],
-      sortOrder: 10,
-    },
-    {
-      id: 'dish-101',
-      menuId: 'menu-002',
-      categoryId: 'cat-101',
-      name: 'Classic Benedict',
-      description: '水煮蛋配荷兰酱和英式松饼',
-      image: 'https://dummyimage.com/300x200/2563eb/ffffff&text=Benedict',
-      price: 58,
-      status: 'on',
-      tags: ['Brunch'],
-      optionIds: ['opt-101'],
-      sortOrder: 10,
-    },
-  ],
+  categories: [],
+  options: [],
+  dishes: [],
   carts: [],
-  orders: [
-    {
-      id: 'order-001',
-      menuId: 'menu-001',
-      userId: 'user-001',
-      orderNo: 'M20230401-001',
-      status: 'processing',
-      totalPrice: 100,
-      remark: '少辣',
-      tableNo: 'A12',
-      historyRefId: null,
-      createdAt: Date.now() - 1000 * 60 * 60 * 12,
-      updatedAt: Date.now() - 1000 * 60 * 30,
-      handledBy: 'user-001',
-      handledRemark: '制作中',
-      items: [
-        {
-          dishId: 'dish-001',
-          name: '水煮鱼',
-          quantity: 1,
-          unitPrice: 68,
-          optionsSnapshot: {
-            辣度: '中辣',
-            份量: '常规',
-          },
-        },
-        {
-          dishId: 'dish-002',
-          name: '宫保鸡丁',
-          quantity: 1,
-          unitPrice: 32,
-          optionsSnapshot: {
-            辣度: '微辣',
-          },
-        },
-      ],
-    },
-  ],
+  orders: [],
   notifications: [],
 };
 
@@ -194,27 +59,30 @@ const saveDB = (db) => {
 };
 
 const ensureUser = () => {
-  const user = wx.getStorageSync(USER_KEY);
-  if (user) {
-    if (typeof user.profileCompleted === 'undefined') {
-      const profileCompleted = Boolean(user.nickname && user.avatar);
-      const patched = {
-        ...user,
-        profileCompleted,
-        updatedAt: user.updatedAt || Date.now(),
-      };
-      wx.setStorageSync(USER_KEY, patched);
-      return patched;
+  const stored = wx.getStorageSync(USER_KEY);
+  if (stored) {
+    const user = { ...stored };
+    let updated = false;
+    if (!user.nickname) {
+      user.nickname = generateRandomNickname();
+      updated = true;
+    }
+    if (!user.avatar) {
+      user.avatar = DEFAULT_AVATAR_URL;
+      updated = true;
+    }
+    const profileCompleted = Boolean(user.nickname && user.avatar);
+    if (user.profileCompleted !== profileCompleted) {
+      user.profileCompleted = profileCompleted;
+      updated = true;
+    }
+    if (updated) {
+      user.updatedAt = Date.now();
+      wx.setStorageSync(USER_KEY, user);
     }
     return user;
   }
-  const now = Date.now();
-  const freshUser = {
-    ...DEFAULT_USER,
-    profileCompleted: false,
-    createdAt: now,
-    updatedAt: now,
-  };
+  const freshUser = createDefaultUser();
   wx.setStorageSync(USER_KEY, freshUser);
   return freshUser;
 };
@@ -262,7 +130,7 @@ const ensureUserRecord = (db, user) => {
   ensureArrayStore(db, 'users');
   const exists = db.users.some((item) => item.id === user.id);
   const now = Date.now();
-  const normalizedNickname = user.nickname || '未命名用户';
+  const normalizedNickname = user.nickname || generateRandomNickname();
   if (!exists) {
     db.users.push({
       id: user.id,

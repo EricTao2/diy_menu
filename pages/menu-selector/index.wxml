@@ -57,7 +57,7 @@
             </view>
           </block>
           <block wx:else>
-            <view class="empty">你还没有任何菜单，点击上方“新建菜单”即可创建</view>
+            <view class="empty">暂无菜单，点击“新建菜单”或通过邀请加入现有菜单</view>
           </block>
           <view class="menu-scroll__spacer"></view>
         </scroll-view>
@@ -66,7 +66,7 @@
       </view>
     </view>
     <view class="page-footer">
-      <button class="enter" bindtap="onEnter">进入菜单</button>
+      <button class="enter" bindtap="onEnter" disabled="{{!menus.length}}">进入菜单</button>
     </view>
   </view>
   <view
