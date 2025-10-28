@@ -581,7 +581,10 @@ Component({
       if (!this.data.isLocked) {
         return;
       }
-      const value = Math.max(Number(scrollTop) || 0, 0);
+      let value = Math.max(Number(scrollTop) || 0, 0);
+      if (value <= 0) {
+        value = 2; // 保持微小偏移，避免触发顶部解锁
+      }
       const current = this.latestDishScrollTop || 0;
       if (!options.force && Math.abs(value - current) < 1) {
         return;

@@ -6,7 +6,7 @@
     </view>
   </view>
   <scroll-view class="page-content" scroll-y enable-flex>
-    <view class="page-inner {{transitionClass}}">
+    <view class="page-inner page-inner--with-footer {{transitionClass}}">
       <view class="top-bar">
         <text class="page-title">{{isEdit ? '编辑菜品' : '创建菜品'}}</text>
       </view>
@@ -15,6 +15,42 @@
         <view class="section-header">
           <text class="section-title">基础信息</text>
           <text class="section-desc">完善菜品名称、价格与展示信息</text>
+        </view>
+        <view class="form-field recipe-import-field">
+          <label>菜谱</label>
+          <view wx:if="{{!form.recipeId}}" class="recipe-inline recipe-inline--empty">
+            <button class="btn-import-recipe" bindtap="onSelectRecipe">从菜谱导入</button>
+            <text class="recipe-inline__hint">可快速填充菜品名称、描述和主图</text>
+          </view>
+          <view wx:else class="recipe-inline recipe-inline--linked">
+            <view class="recipe-inline__header">
+              <text class="recipe-inline__label">已关联菜谱：</text>
+              <text wx:if="{{!recipeMissing}}" class="recipe-inline__name">{{recipe ? recipe.name : '加载中...'}}</text>
+              <text wx:else class="recipe-inline__name recipe-inline__name--missing">关联的菜谱已删除</text>
+            </view>
+            <view class="recipe-inline__actions">
+              <button
+                class="btn-recipe-action {{recipeMissing ? 'btn-recipe-action--disabled' : ''}}"
+                size="mini"
+                bindtap="onViewRecipe"
+                disabled="{{recipeMissing}}"
+              >
+                查看菜谱
+              </button>
+              <button class="btn-recipe-action" size="mini" bindtap="onChangeRecipe">
+                更换菜谱
+              </button>
+            </view>
+            <text class="recipe-inline__hint" wx:if="{{recipeMissing}}">
+              当前关联的菜谱已删除，请重新选择以继续同步菜品信息。
+            </text>
+          </view>
+        </view>
+        <view class="form-field">
+          <label>所属分类</label>
+          <picker mode="selector" range="{{categoryPicker}}" bindchange="onCategoryChange">
+            <view class="picker">{{selectedCategoryName || categoryPicker[0]}}</view>
+          </picker>
         </view>
         <view class="form-field">
           <label>菜品名称</label>
@@ -69,55 +105,12 @@
           </view>
         </view>
         <view class="form-field">
-          <label>所属分类</label>
-          <picker mode="selector" range="{{categoryPicker}}" bindchange="onCategoryChange">
-            <view class="picker">{{selectedCategoryName || categoryPicker[0]}}</view>
-          </picker>
-        </view>
-        <view class="form-field">
           <label>描述</label>
           <textarea value="{{form.description}}" data-field="description" bindinput="onInput" placeholder="菜品简介"></textarea>
         </view>
         <view class="form-field">
           <label>标签（逗号分隔）</label>
           <input value="{{form.tags}}" data-field="tags" bindinput="onInput" placeholder="示例：新品,推荐" />
-        </view>
-      </view>
-
-      <!-- 菜谱关联 -->
-      <view class="card section-card">
-        <view class="section-header">
-          <text class="section-title">关联菜谱</text>
-          <text class="section-desc">从菜谱库导入菜品信息</text>
-        </view>
-        
-        <view wx:if="{{!form.recipeId}}" class="recipe-empty">
-          <button class="btn-import-recipe" bindtap="onSelectRecipe">
-            从菜谱导入
-          </button>
-        </view>
-        <view wx:else class="recipe-linked">
-          <view class="recipe-info">
-            <text class="recipe-label">已关联菜谱：</text>
-            <text wx:if="{{!recipeMissing}}" class="recipe-name">{{recipe ? recipe.name : '加载中...'}}</text>
-            <text wx:else class="recipe-name recipe-name--missing">关联的菜谱已删除</text>
-          </view>
-          <view class="recipe-actions">
-            <button
-              class="btn-recipe-action {{recipeMissing ? 'btn-recipe-action--disabled' : ''}}"
-              size="mini"
-              bindtap="onViewRecipe"
-              disabled="{{recipeMissing}}"
-            >
-              查看菜谱
-            </button>
-            <button class="btn-recipe-action" size="mini" bindtap="onChangeRecipe">
-              更换菜谱
-            </button>
-          </view>
-          <view class="recipe-hint" wx:if="{{recipeMissing}}">
-            当前关联的菜谱已删除，请重新选择以继续同步菜品信息。
-          </view>
         </view>
       </view>
 
@@ -148,18 +141,17 @@
           </block>
         </view>
       </view>
-
-      <view class="form-actions page-actions">
-        <button
-          wx:if="{{isEdit}}"
-          class="danger"
-          loading="{{deleting}}"
-          bindtap="onDeleteDish"
-        >
-          删除菜品
-        </button>
-        <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存菜品</button>
-      </view>
     </view>
   </scroll-view>
+  <view class="page-footer">
+    <button
+      wx:if="{{isEdit}}"
+      class="danger"
+      loading="{{deleting}}"
+      bindtap="onDeleteDish"
+    >
+      删除菜品
+    </button>
+    <button class="primary" loading="{{saving}}" bindtap="onSubmit">保存菜品</button>
+  </view>
 </view>

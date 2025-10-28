@@ -109,6 +109,7 @@ createPage({
       this.flyDotTimers = null;
     }
     this.dismissToastIfVisible();
+    this._pendingCategoryScroll = null;
   },
   methods: {
     async initPage() {
@@ -133,6 +134,7 @@ createPage({
       this.flyDotTimers = {};
       this.lockedAnchors = [];
       this.pageAnchors = [];
+      this._pendingCategoryScroll = null;
       this.lockedViewportHeight = 0;
       this.pageViewportHeight = 0;
       this._manualCategoryScroll = null;
@@ -295,11 +297,24 @@ createPage({
     },
     onLockChange(event) {
       const { isLocked } = event?.detail || {};
+      const pending = this._pendingCategoryScroll;
       this.setData({ isMenuLocked: !!isLocked });
       this._manualCategoryScroll = null;
       this.prepareMenuAnchors();
       if (isLocked) {
-        this.syncActiveCategoryByScroll(this.currentDishScrollTop || 0, 'locked', { force: true });
+        if (!pending || !pending.id) {
+          this.syncActiveCategoryByScroll(this.currentDishScrollTop || 0, 'locked', { force: true });
+        }
+        if (pending && pending.id) {
+          this._pendingCategoryScroll = null;
+          const { id, options } = pending;
+          this.setData({ activeCategoryId: id });
+          wx.nextTick(() => {
+            setTimeout(() => {
+              this.performCategoryScroll(id, options);
+            }, 40);
+          });
+        }
       } else {
         this.syncActiveCategoryByScroll(this.currentPageScrollTop || 0, 'page', { force: true });
       }
@@ -487,15 +502,63 @@ createPage({
         return;
       }
       const scrollOptions = { ...options, force: true };
+      if (!this.data.isMenuLocked && typeof component.scrollPageToAnchor === 'function') {
+        this._pendingCategoryScroll = { id, options: scrollOptions };
+        component.scrollPageToAnchor('msc-sentinel');
+        return;
+      }
+      this.performCategoryScroll(id, scrollOptions, component);
+    },
+    performCategoryScroll(categoryId, options = {}, componentInstance) {
+      const id = categoryId != null ? String(categoryId) : '';
+      if (!id) {
+        return;
+      }
+      const component = componentInstance || this.selectComponent('#menuScroll');
+      if (!component) {
+        return;
+      }
+      const scrollOptions = { ...options, force: true };
+      if (this.data.activeCategoryId !== id) {
+        this.setData({ activeCategoryId: id });
+      }
       const anchorId = `dish-group-${id}`;
-      if (this.data.isMenuLocked && typeof component.scrollDishTo === 'function') {
-        const lockedAnchors = this.lockedAnchors || [];
-        const lockedAnchor = lockedAnchors.find((item) => item && String(item.id) === id);
-        if (lockedAnchor) {
-          component.scrollDishTo(lockedAnchor.top, scrollOptions);
-        } else if (typeof component.scrollDishIntoView === 'function') {
-          component.scrollDishIntoView(anchorId, scrollOptions);
-        }
+      if (this.data.isMenuLocked) {
+        const applyScrollTop = (scrollTop) => {
+          if (typeof component.scrollDishTo !== 'function') {
+            return false;
+          }
+          const target = Math.max(Number(scrollTop) || 0, 0);
+          const adjusted = target <= 0 ? 2 : target;
+          component.scrollDishTo(adjusted, scrollOptions);
+          return true;
+        };
+        const query = wx.createSelectorQuery();
+        query.select('#msc-dishes').boundingClientRect();
+        query.select('#msc-dishes').scrollOffset();
+        query.select(`#${anchorId}`).boundingClientRect();
+        query.exec((res = []) => {
+          const [containerRect, containerOffset, targetRect] = res || [];
+          if (containerRect && containerOffset && targetRect) {
+            const containerTop = containerRect.top || 0;
+            const currentScrollTop =
+              typeof containerOffset.scrollTop === 'number' ? containerOffset.scrollTop : 0;
+            const targetTop = targetRect.top || 0;
+            const nextScrollTop = Math.max(
+              Math.round(currentScrollTop + (targetTop - containerTop)),
+              0
+            );
+            if (applyScrollTop(nextScrollTop)) {
+              return;
+            }
+          }
+          const lockedAnchors = this.lockedAnchors || [];
+          const lockedAnchor = lockedAnchors.find((item) => item && String(item.id) === id);
+          if (lockedAnchor && applyScrollTop(lockedAnchor.top)) {
+            return;
+          }
+          applyScrollTop(0);
+        });
       } else if (typeof component.scrollDishIntoView === 'function') {
         component.scrollDishIntoView(anchorId, scrollOptions);
       }
